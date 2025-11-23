@@ -24,7 +24,7 @@ if($con->connect_error){
 ?>
 */
 
-//<?php
+
 // Alternative approach using environment file for better security and flexibility
 $env = parse_ini_file('../env/connect.env');// if your connect is in the root it would be env/connect.env if not you need to use the exact location example if it is in another folder it would be ../env/connect.env
 
