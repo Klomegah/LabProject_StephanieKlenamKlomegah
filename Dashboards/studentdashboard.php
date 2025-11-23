@@ -1,0 +1,98 @@
+<?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../Login and Signup/login.html");
+    exit();
+}
+
+// Check if user is student
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
+    header("Location: facultydashboard.php");
+    exit();
+}
+
+// If authorized, output the HTML file
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+    <header>
+        <h1>Student Dashboard</h1>
+        <nav>
+            <ul>
+                <li><a href="#my-courses">My Courses</a></li>
+                <li><a href="#available-courses">Browse Courses</a></li>
+                <li><a href="#" onclick="logout(); return false;">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div id="message" class="message"></div>
+
+        <!-- My Enrolled Courses Section -->
+        <section id="my-courses">
+            <h2>My Enrolled Courses</h2>
+            <table id="enrolled-courses-table">
+                <thead>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Faculty</th>
+                        <th>Enrolled Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="loading">Loading courses...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Available Courses Section -->
+        <section id="available-courses">
+            <h2>Browse and Join Courses</h2>
+            
+            <div class="search-bar">
+                <input type="text" id="course-search" placeholder="Search courses by code, name, or faculty...">
+            </div>
+
+            <table id="available-courses-table">
+                <thead>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Faculty</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="loading">Loading courses...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2025 Attendance Management System</p>
+    </footer>
+
+    <script src="student-dashboard.js"></script>
+</body>
+
+</html>
+
