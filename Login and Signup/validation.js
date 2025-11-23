@@ -74,7 +74,7 @@ console.log('Payload:', payload);
 
 // Send fetch request with JSON payload
 
-// try{
+try {
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -86,7 +86,7 @@ console.log('Payload:', payload);
     const result = await response.json();
     
 
-    if((endpoint =='signup.php' && result.success) || (endpoint =='login.php' && result.success)){
+    if((endpoint =='../PHP/signup.php' && result.success) || (endpoint =='../PHP/login.php' && result.success)){
         //Redirect to dashboard on successful signup or login
 
         window.location.href = 'dashboard.html';
@@ -101,17 +101,17 @@ console.log('Payload:', payload);
             error_message.innerText = '';
         }, 5000);
     }
-//} catch (error) {
-  //  console.error('Error:', error);
-  //  error_message.innerText = 'An error occurred. Please try again.';
-  //  error_message.style.display = 'block';
+} catch (error) {
+    console.error('Error:', error);
+    error_message.innerText = 'An error occurred. Please try again.';
+    error_message.style.display = 'block';
 
     //Auto-hide error message after 5 seconds
-   // setTimeout(() => {
-   //     error_message.style.display = 'none';
-   //     error_message.innerText = '';
- //   }, 5000);
-//}
+    setTimeout(() => {
+        error_message.style.display = 'none';
+        error_message.innerText = '';
+    }, 5000);
+}
 
 });
 
