@@ -1,6 +1,10 @@
 <?php
 
+session_start();
 require_once 'db.php';
+
+// Set JSON response header
+header('Content-Type: application/json');
 
 // echo post object for debugging
 
@@ -12,7 +16,7 @@ $input = json_decode(file_get_contents("php://input"), true);
 if ($input === null) {
     echo json_encode([
         "success" => false,
-        "message" => "JSON decode failed", // Debugging message, i keep getting invalid input and i dont know why, i think it my json validation
+        "message" => "JSON decode failed. Please check your input.",
         "raw" => file_get_contents("php://input")
     ]);
     exit();
@@ -33,6 +37,7 @@ $fname=$input['firstname'];
 $lname=$input['lastname'];
 $email=$input['email'];
 $password=password_hash($input['password'],PASSWORD_DEFAULT);
+$role = isset($input['role']) && in_array($input['role'], ['student', 'faculty']) ? $input['role'] : 'student';
 
 //// Variables $varriable name; or $variablename=value;
 //$fname=$_POST['firstname'];
@@ -62,7 +67,7 @@ $password=password_hash($input['password'],PASSWORD_DEFAULT);
 
 //$c=$con->query($INS_COM);
 
-$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)"; // ?-> where the cvalues will go
+$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)"; // ?-> where the cvalues will go
 
 //preparing the statement
 $stmt = $con->prepare($INS_COM);
@@ -75,7 +80,7 @@ if($stmt===false){
 }
 
 //binding the parameters
-$stmt->bind_param("ssss", $fname, $lname, $email, $password);// Parameters: type(s), values
+$stmt->bind_param("sssss", $fname, $lname, $email, $password, $role);// Parameters: type(s), values
 
 //excute
 $excecute_success = $stmt->execute(); //execute
@@ -87,14 +92,70 @@ $excecute_success = $stmt->execute(); //execute
 
 // Redirect if insert is successful query retruns true or false 
 if($excecute_success){
-    //header('Location: ../view/login.html');
-    $state=["success"=>true];
+    $user_id = $stmt->insert_id;
+    
+    // Also insert into faculty or students table based on role
+    $faculty_student_insert_success = true;
+    if ($role === 'faculty') {
+        $faculty_stmt = $con->prepare("INSERT INTO faculty (faculty_id) VALUES (?)");
+        if ($faculty_stmt) {
+            $faculty_stmt->bind_param("i", $user_id);
+            if (!$faculty_stmt->execute()) {
+                // If insert fails, try to continue anyway (might already exist)
+                error_log("Failed to insert into faculty table: " . $faculty_stmt->error);
+                // Don't fail the signup if faculty entry already exists
+                if (strpos($faculty_stmt->error, 'Duplicate') === false) {
+                    $faculty_student_insert_success = false;
+                }
+            }
+            $faculty_stmt->close();
+        }
+    } else {
+        $student_stmt = $con->prepare("INSERT INTO students (student_id) VALUES (?)");
+        if ($student_stmt) {
+            $student_stmt->bind_param("i", $user_id);
+            if (!$student_stmt->execute()) {
+                // If insert fails, try to continue anyway (might already exist)
+                error_log("Failed to insert into students table: " . $student_stmt->error);
+                // Don't fail the signup if student entry already exists
+                if (strpos($student_stmt->error, 'Duplicate') === false) {
+                    $faculty_student_insert_success = false;
+                }
+            }
+            $student_stmt->close();
+        }
+    }
+    
+    // Set session variables to log the user in automatically
+    $_SESSION['user_id'] = $user_id;
+    $_SESSION['first_name'] = $fname;
+    $_SESSION['last_name'] = $lname;
+    $_SESSION['email'] = $email;
+    $_SESSION['role'] = $role;
+    
+    // Set faculty_id or student_id in session
+    if ($role === 'faculty') {
+        $_SESSION['faculty_id'] = $user_id;
+    } else {
+        $_SESSION['student_id'] = $user_id;
+    }
+    
+    // Return success with role for redirect
+    $state=["success"=>true, "role"=>$role, "message"=>"Signup successful"];
     echo json_encode($state);
     exit();
 }else{
-    $state=["success"=>false, "message"=>"Insert Failed"];
+    // Get the actual error from MySQL
+    $error_message = $stmt->error ? $stmt->error : "Insert Failed";
+    // Check for duplicate email error
+    if (strpos($error_message, 'Duplicate entry') !== false && strpos($error_message, 'email') !== false) {
+        $error_message = "Email already exists. Please use a different email.";
+    } elseif (strpos($error_message, 'Duplicate entry') !== false) {
+        $error_message = "This information already exists in the system.";
+    }
+    $state=["success"=>false, "message"=>$error_message];
     echo json_encode($state);
-    // echo "Failed Retry";
+    exit();
 }
 
 // if html is rendered in php to check for a submit 
