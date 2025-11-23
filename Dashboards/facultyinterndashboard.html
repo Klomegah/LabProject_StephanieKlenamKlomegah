@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name = "viewport" content="width=device-width,initial-scale=1.0">
+    <title>Faculty Intern Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>Faculty Intern Dashboard</h1>
+   
+
+    <nav>
+        <ul>
+            <li><a href = "#course-list"> Course List</a></li>
+            <li><a href ="#sessions"> Sessions</a></li>
+            <li><a href = "#reports"> Attendance Reports</a></li>
+            <li><a href = "#auditors"> Auditors</a></li>
+        </ul>
+    </nav>
+    </header>
+
+
+    <main>
+        <!-- Course List stuff-->
+
+        <section id="course-list">
+            <h2> Course Lists</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Course ID </th>
+                        <th> Course Name</th>
+                        <th> Assigned Faculty </th>
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    <tr>
+                        <td>CS201</td>
+                        <td>Data Structures</td>
+                        <td> Mr. Govindha</td>
+                    </tr>
+
+                    <tr>
+                        <td>MTH204</td>
+                        <td>Linear Algebra</td>
+                        <td> Dr. Ayawoa</td>
+                    </tr>
+                </tbody>
+                </thead>
+            </table>
+        </section>
+
+
+    
+        <section id="sessions">
+            <h2>Sessions</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th> Course </th>
+                        <th> Date </th>
+                        <th> Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+               
+                <tbody>
+                    <tr>
+                         <td>CS201- Data Structures</td>
+                        <td> Oct 15, 2025</td>
+                        <td>Completed</td>
+                        <td><button>View Session Summary</button></td>
+                    </tr>
+
+                    <tr>
+                        <td>MTH204- Linear Algebra</td>
+                        <td>Oct 28, 2025</td>
+                        <td>Ongoing</td>
+                        <td><button>View Session Summary</button></td>
+                    </tr>
+                </tbody>
+            </table>    
+        </section>        
+
+        
+        <section id="reports">
+            <h2> Attendance Reports</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Course </th>
+                        <th>Attendance Rate</th>
+                        <th> Feedback </th>
+                        <th> Action <th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>CS201</td>
+                        <td>89%</td>
+                        <td>Excellence participation</td>
+                        <td>
+                            <button class = "publish-btn"> Publish</button>
+                            <button class="edit-btn">Edit</button>
+                            <button class="delete-btn">Delete</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>MTH204</td>
+                        <td>94%</td>
+                        <td>Improved engagement</td>
+
+                        <td>
+                            <button class = "publish-btn"> Publish</button>
+                            <button class="edit-btn">Edit</button>
+                            <button class="delete-btn">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+
+         
+        <section id="auditors">
+            <h2>Auditors</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name </th>
+                        <th>Course ID</th>
+                        <th> Status </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>Stephanie Klenam Klomegah</td>
+                        <td>CS201</td>
+                        <td>Active</td>
+                    </tr>
+
+                    <tr>
+                        <td>Afi Klomegah</td>
+                        <td>MTH204</td>
+                        <td>Active</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>    
+    </main>
+
+
+
+    <footer>
+        <p> @2025 Attendance Management System</p>
+    </footer>
+
+</body>
+</html>    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

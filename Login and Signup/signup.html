@@ -50,6 +50,17 @@
                 <input type="password" required name="confirm-password" id ="confirm-password-input" placeholder="Confirm Password" />
             </div>
 
+            <div>
+                <label for="role-input">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill=black><path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z"/></svg>
+                </label>
+                <select name="role" id="role-input" required style="box-sizing: border-box; flex-grow: 1; min-width: none; height: 50px; padding: 0 1em; font: inherit; border-radius: 0 10px 10px 0; border: 2px solid var(--input-color); background-color: var(--input-color); transition: 150ms ease-in-out;">
+                    <option value="">Select Role</option>
+                    <option value="student">Student</option>
+                    <option value="faculty">Faculty</option>
+                </select>
+            </div>
+
             <button type="submit" id="signup-button">Sign Up</button>
 
             <p>Already have an account? <a href="login.html">Log In</a></p>

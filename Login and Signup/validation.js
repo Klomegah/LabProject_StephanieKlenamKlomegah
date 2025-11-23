@@ -6,6 +6,7 @@ const lastname_input = document.getElementById("lastname-input");
 const email_input = document.getElementById("email-input");
 const password_input = document.getElementById("password-input");
 const confirm_password_input = document.getElementById("confirm-password-input");
+const role_input = document.getElementById("role-input");
 const error_message = document.getElementById("error-message");
 
 // Form submit event listener
@@ -57,7 +58,8 @@ if (firstname_input){
         lastname: lastname_input.value,
         email: email_input.value,
         password: password_input.value,
-        confirm_password: confirm_password_input.value
+        confirm_password: confirm_password_input.value,
+        role: role_input ? role_input.value : 'student'
     };
     
     //comment this out later
@@ -81,20 +83,52 @@ try {
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
-    
+    // Check if response is OK
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    if((endpoint =='../PHP/signup.php' && result.success) || (endpoint =='../PHP/login.php' && result.success)){
-        //Redirect to dashboard on successful signup or login
+    // Try to parse JSON response
+    let result;
+    try {
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        result = JSON.parse(responseText);
+        console.log('Parsed result:', result);
+    } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        console.error('Response was:', await response.text());
+        throw new Error('Invalid response from server. Please try again.');
+    }
 
-        window.location.href = 'dashboard.html';
+    console.log('Checking result.success:', result.success);
+    console.log('Result role:', result.role);
+
+    if(result.success === true){
+        // Hide any error messages before redirecting
+        error_message.style.display = 'none';
+        error_message.innerText = '';
+        
+        // Redirect to appropriate dashboard based on role
+        const role = result.role || 'student';
+        console.log('Redirecting with role:', role);
+        
+        if (role === 'faculty') {
+            console.log('Redirecting to faculty dashboard');
+            window.location.href = '../Dashboards/facultydashboard.php';
+        } else {
+            console.log('Redirecting to student dashboard');
+            window.location.href = '../Dashboards/studentdashboard.php';
+        }
 
     } else {
+        console.log('Showing error:', result.message);
         error_message.innerText = result.message || 'An error occurred. Please try again.';
         error_message.style.display = 'block';
         
@@ -106,7 +140,7 @@ try {
     }
 } catch (error) {
     console.error('Error:', error);
-    error_message.innerText = 'An error occurred. Please try again.';
+    error_message.innerText = error.message || 'An error occurred. Please try again.';
     error_message.style.display = 'block';
 
     //Auto-hide error message after 5 seconds
@@ -171,6 +205,13 @@ function getSignUpErrors(firstname, lastname, email, password, confirm_password)
         errors.push("Passwords do not match");
         confirm_password_input.parentElement.classList.add('incorrect');
     }
+
+    //validate role
+    if (role_input && (!role_input.value || role_input.value.trim() == '')){
+        errors.push("Please select a role");
+        role_input.parentElement.classList.add('incorrect');
+    }
+
     return errors;
 }
 
@@ -202,11 +243,12 @@ function getLoginErrors(email, password){
 }
 
 
-const allInputs = [firstname_input, lastname_input, email_input, password_input, confirm_password_input].filter(input => input !== null);
+const allInputs = [firstname_input, lastname_input, email_input, password_input, confirm_password_input, role_input].filter(input => input !== null);
 
 allInputs.forEach(input => {
     if (input){
-        input.addEventListener('input', () => {
+        const eventType = input.tagName === 'SELECT' ? 'change' : 'input';
+        input.addEventListener(eventType, () => {
             if (input.parentElement.classList.contains('incorrect')){
                 input.parentElement.classList.remove('incorrect');
                 error_message.innerText = '';

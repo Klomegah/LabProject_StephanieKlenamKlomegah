@@ -49,7 +49,7 @@ body::before{
 }
 
 
-/*figure out your the styling and positioning for the form item*/
+/*figure out my for  the styling and positioning for the form item*/
 h1{
     font-size: 3rem;
     font-weight: 900;
@@ -111,6 +111,24 @@ form input:focus{
     outline: none;
     border-color: var(--accent-color);
      box-shadow: 0 0 5px var(--accent-color); 
+}
+
+form select {
+    box-sizing: border-box;
+    flex-grow: 1;
+    min-width: none;
+    height: 50px;
+    padding: 0 1em;
+    font: inherit;
+    border-radius: 0 10px 10px 0;
+    border: 2px solid var(--input-color);
+    background-color: var(--input-color);
+    transition: 150ms ease-in-out;
+    cursor: pointer;
+}
+
+form select:hover {
+    border-color: var(--accent-color);
 }
 
 form button{
