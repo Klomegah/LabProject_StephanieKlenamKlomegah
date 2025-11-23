@@ -59,6 +59,8 @@ if (firstname_input){
         password: password_input.value,
         confirm_password: confirm_password_input.value
     };
+    
+    //comment this out later
     console.log('Payload:', payload);
 
 } else {
@@ -70,6 +72,7 @@ if (firstname_input){
     };
 }
 
+//comment this out later
 console.log('Payload:', payload);
 
 // Send fetch request with JSON payload

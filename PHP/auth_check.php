@@ -2,7 +2,7 @@
 session_start();
 
 
-//ensure the request method is not a fettch/AJAX request that should return JSON
+//ensure the request method is not a fetch/AJAX request that should return JSON
 if($_SERVER['REQUEST_METHOD'] != 'POST' || !isset($_SERVER['HTTP_ACCEPT']) || strpos($_SERVER['HTTP_ACCEPT'], 'application/json') === false){
     //authorisation check : look for user_id in session
     if(isset($_SESSION['user_id'])){

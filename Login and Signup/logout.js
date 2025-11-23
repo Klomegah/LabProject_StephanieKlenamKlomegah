@@ -9,7 +9,8 @@ const logout = async () => {
 
         const result = await response.json();
 
-        if (result.logout === true) {
+        if (result.success
+             === true) {
             // Display success notification and redirect to login page
             await Swal.fire({
                 icon: 'success',
