@@ -1,21 +1,18 @@
 <?php
-//require '../PHP/db.php';
 session_start();
 
-$login_page="Login and Signup/login.html";
-$dashboard_page="dashboard.php";
+// Landing page - always redirect to login page
+$login_page = "./Login and Signup/login.html";
 
-// Define a function to check if user is logged in
+// Check if user is logged in
 if(isset($_SESSION['user_id'])){
-    // User is logged in, redirect to dashboard
-   header("Location: ".$dashboard_page);
-}else{
-    // User is not logged in, redirect to login page
-    header("Location: ".$login_page);
+    // User is logged in, redirect to appropriate dashboard
+    $dashboard_page = "./PHP/dashboard_router.php";
+    header("Location: " . $dashboard_page);
+    exit();
+} else {
+    // User is not logged in, redirect to login page (landing page)
+    header("Location: " . $login_page);
+    exit();
 }
-
-exit();
-
-
-
 ?>
