@@ -1,7 +1,7 @@
 <?php
-require  'db.php';
-
 session_start();
+
+// Clear session data
 if(ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -14,15 +14,19 @@ if(ini_get('session.use_cookies')) {
 session_unset();
 
 // Destroy the session
-$success = session_destroy();
+session_destroy();
 
-// Set the response header to JSON
-header('Content-Type: application/json');
+// Check if this is an AJAX request (from JavaScript fetch)
+$isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+$isAjax = $isAjax || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
-if ($success) {
+if ($isAjax) {
+    // Set the response header to JSON for AJAX requests
+    header('Content-Type: application/json');
     echo json_encode(["success" => true, "message" => "Logout successful"]);
 } else {
-    echo json_encode(["success" => false, "message" => "Logout failed"]);}
-
-
+    // Redirect to login page for direct browser requests
+    header("Location: ../Login and Signup/login.html");
+    exit();
+}
 ?>
