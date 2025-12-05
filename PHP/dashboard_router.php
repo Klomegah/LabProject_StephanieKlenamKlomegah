@@ -7,10 +7,13 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Redirect based on role
-$role = $_SESSION['role'] ?? 'student';
+// Redirect based on role - check if user is in faculty table
+require_once 'db.php';
+require_once 'faculty_check.php';
 
-if ($role === 'faculty') {
+$user_id = $_SESSION['user_id'] ?? null;
+
+if ($user_id && isFaculty($con, $user_id)) {
     header("Location: ../Dashboards/facultydashboard.php");
 } else {
     header("Location: ../Dashboards/studentdashboard.php");

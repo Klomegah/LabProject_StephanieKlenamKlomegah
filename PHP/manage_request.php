@@ -2,12 +2,13 @@
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
+require_once 'faculty_check.php';
 
 // Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in and is faculty
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
+// Check if user is logged in and is faculty (or faculty intern)
+if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
@@ -22,7 +23,7 @@ if (!isset($input['request_id'], $input['action'])) {
 
 $request_id = intval($input['request_id']);
 $action = $input['action']; // 'approve' or 'reject'
-$faculty_id = $_SESSION['faculty_id'] ?? $_SESSION['user_id'];
+$faculty_id = $_SESSION['user_id'];
 
 if (!in_array($action, ['approve', 'reject'])) {
     echo json_encode(["success" => false, "message" => "Invalid action. Must be 'approve' or 'reject'."]);
