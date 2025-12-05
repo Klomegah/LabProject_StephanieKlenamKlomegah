@@ -2,12 +2,13 @@
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
+require_once 'faculty_check.php';
 
 // Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in and is faculty
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
+// Check if user is logged in and is faculty (or faculty intern)
+if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
@@ -24,8 +25,8 @@ $course_code = trim($input['course_code']);
 $course_name = trim($input['course_name']);
 $course_description = isset($input['course_description']) ? trim($input['course_description']) : '';
 
-// Get faculty_id - check if it exists in faculty table
-$faculty_id = $_SESSION['faculty_id'] ?? $_SESSION['user_id'];
+// Get faculty_id
+$faculty_id = $_SESSION['user_id'];
 
 // Verify that the faculty_id exists in the faculty table, if not, try to create it
 $check_stmt = $con->prepare("SELECT faculty_id FROM faculty WHERE faculty_id = ?");
