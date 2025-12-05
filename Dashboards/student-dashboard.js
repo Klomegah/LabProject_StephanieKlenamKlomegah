@@ -195,15 +195,168 @@ async function logout() {
     }
 }
 
+// Note: Attendance code submission removed - attendance is marked by faculty only
+
+// Load attendance reports
+async function loadAttendanceReports() {
+    const reportType = document.getElementById('report-type').value;
+    const courseFilter = document.getElementById('report-course-filter').value || '';
+    const dateFilter = document.getElementById('report-date').value || '';
+
+    // Show/hide date filter based on report type
+    const dateFilterGroup = document.getElementById('date-filter-group');
+    if (dateFilterGroup) {
+        dateFilterGroup.style.display = reportType === 'daily' ? 'block' : 'none';
+        if (reportType === 'daily' && !dateFilter) {
+            document.getElementById('report-date').value = new Date().toISOString().split('T')[0];
+        }
+    }
+
+    try {
+        let url = `${API_BASE}get_attendance_reports.php?type=${reportType}`;
+        if (courseFilter) {
+            url += `&course_id=${courseFilter}`;
+        }
+        if (reportType === 'daily' && dateFilter) {
+            url += `&date=${dateFilter}`;
+        }
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            if (reportType === 'daily') {
+                displayDailyReport(result.reports);
+            } else {
+                displayOverallReport(result.reports);
+            }
+        } else {
+            showMessage(result.message || 'Failed to load reports', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading attendance reports:', error);
+        showMessage('Error loading attendance reports', 'error');
+    }
+}
+
+// Display overall attendance report
+function displayOverallReport(reports) {
+    const tbody = document.querySelector('#overall-attendance-table tbody');
+    const overallDiv = document.getElementById('overall-report');
+    const dailyDiv = document.getElementById('daily-report');
+
+    if (overallDiv) overallDiv.style.display = 'block';
+    if (dailyDiv) dailyDiv.style.display = 'none';
+
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No attendance data available</td></tr>';
+        return;
+    }
+
+    reports.forEach(report => {
+        const row = document.createElement('tr');
+        const attendanceRate = parseFloat(report.attendance_rate) || 0;
+        const rateColor = attendanceRate >= 75 ? 'var(--success-color)' : attendanceRate >= 50 ? '#ffc107' : 'var(--error-color)';
+        
+        row.innerHTML = `
+            <td>${report.course_code}</td>
+            <td>${report.course_name}</td>
+            <td>${report.total_sessions || 0}</td>
+            <td>${report.attended_sessions || 0}</td>
+            <td><strong style="color: ${rateColor};">${attendanceRate.toFixed(1)}%</strong></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Display daily attendance report
+function displayDailyReport(reports) {
+    const tbody = document.querySelector('#daily-attendance-table tbody');
+    const overallDiv = document.getElementById('overall-report');
+    const dailyDiv = document.getElementById('daily-report');
+
+    if (overallDiv) overallDiv.style.display = 'none';
+    if (dailyDiv) dailyDiv.style.display = 'block';
+
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No sessions found for this date</td></tr>';
+        return;
+    }
+
+    reports.forEach(report => {
+        const row = document.createElement('tr');
+        const statusClass = `status-${report.status}`;
+        const sessionDate = new Date(report.session_date + 'T' + report.start_time);
+        const checkInTime = report.check_in_time ? report.check_in_time : 'Not marked';
+        
+        row.innerHTML = `
+            <td>${report.course_code} - ${report.course_name}</td>
+            <td>${sessionDate.toLocaleDateString()}</td>
+            <td>${sessionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+            <td><span class="status-badge ${statusClass}">${report.status}</span></td>
+            <td>${checkInTime}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Populate course filter dropdown
+function populateCourseFilter() {
+    const filterSelect = document.getElementById('report-course-filter');
+    if (!filterSelect) return;
+
+    // Get enrolled courses
+    fetch(`${API_BASE}get_enrolled_courses.php`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            filterSelect.innerHTML = '<option value="">All Courses</option>';
+            result.courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.course_id;
+                option.textContent = `${course.course_code} - ${course.course_name}`;
+                filterSelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading courses for filter:', error);
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     loadEnrolledCourses();
     loadAvailableCourses();
+    populateCourseFilter();
+    loadAttendanceReports();
 
     // Set up search functionality
     const searchInput = document.getElementById('course-search');
     if (searchInput) {
         searchInput.addEventListener('input', filterAndDisplayCourses);
     }
+
+    // Attendance is marked by faculty, students can only view reports
 });
 

@@ -14,6 +14,8 @@
         <nav>
             <ul>
                 <li><a href="#my-courses">My Courses</a></li>
+                <li><a href="#mark-attendance">Mark Attendance</a></li>
+                <li><a href="#attendance-reports">Attendance Reports</a></li>
                 <li><a href="#available-courses">Browse Courses</a></li>
                 <li><a href="#" onclick="logout(); return false;">Logout</a></li>
             </ul>
@@ -41,6 +43,77 @@
                     </tr>
                 </tbody>
             </table>
+        </section>
+
+        <!-- Mark Attendance Section -->
+        <section id="mark-attendance">
+            <h2>Attendance Information</h2>
+            <p style="margin-bottom: 1.5rem; color: #666;">Your attendance is marked by your instructor during class sessions. View your attendance history and reports below.</p>
+        </section>
+
+        <!-- Attendance Reports Section -->
+        <section id="attendance-reports">
+            <h2>Attendance Reports</h2>
+
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="report-course-filter">Filter by Course:</label>
+                    <select id="report-course-filter" onchange="loadAttendanceReports()">
+                        <option value="">All Courses</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="report-type">Report Type:</label>
+                    <select id="report-type" onchange="loadAttendanceReports()">
+                        <option value="overall">Overall Report</option>
+                        <option value="daily">Daily Report</option>
+                    </select>
+                </div>
+                <div class="form-group" id="date-filter-group" style="margin-bottom: 0; display: none;">
+                    <label for="report-date">Date:</label>
+                    <input type="date" id="report-date" onchange="loadAttendanceReports()" value="">
+                </div>
+            </div>
+
+            <div id="overall-report">
+                <h3>Overall Attendance</h3>
+                <table id="overall-attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Total Sessions</th>
+                            <th>Attended</th>
+                            <th>Attendance Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="loading">Loading reports...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="daily-report" style="display: none;">
+                <h3>Daily Attendance</h3>
+                <table id="daily-attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Marked At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="loading">Loading reports...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <!-- Available Courses Section -->
