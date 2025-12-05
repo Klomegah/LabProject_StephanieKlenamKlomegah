@@ -2,17 +2,18 @@
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
+require_once 'faculty_check.php';
 
 // Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in and is faculty
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
+// Check if user is logged in and is faculty (or faculty intern)
+if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-$faculty_id = $_SESSION['faculty_id'] ?? $_SESSION['user_id'];
+$faculty_id = $_SESSION['user_id'];
 
 // Get requests for courses owned by this faculty
 $stmt = $con->prepare("SELECT cr.request_id, cr.course_id, cr.student_id, cr.status, cr.requested_at, cr.reviewed_at,

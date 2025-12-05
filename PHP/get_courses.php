@@ -2,6 +2,7 @@
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
+require_once 'faculty_check.php';
 
 // Set JSON response header
 header('Content-Type: application/json');
@@ -12,11 +13,12 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_role = $_SESSION['role'] ?? 'student';
+$user_id = $_SESSION['user_id'];
+$is_faculty_user = isFaculty($con, $user_id);
 
-if ($user_role === 'faculty') {
-    // Faculty sees only their courses
-    $faculty_id = $_SESSION['faculty_id'] ?? $_SESSION['user_id'];
+if ($is_faculty_user) {
+    // Faculty/Faculty Intern sees only their courses
+    $faculty_id = $user_id;
     $stmt = $con->prepare("SELECT c.course_id, c.course_code, c.course_name, c.description, 
                            COUNT(DISTINCT csl.student_id) as enrolled_students,
                            COUNT(DISTINCT CASE WHEN cr.status = 'pending' THEN cr.request_id END) as pending_requests
@@ -29,7 +31,7 @@ if ($user_role === 'faculty') {
     $stmt->bind_param("i", $faculty_id);
 } else {
     // Students see all available courses with their enrollment status
-    $student_id = $_SESSION['student_id'] ?? $_SESSION['user_id'];
+    $student_id = $user_id;
     $stmt = $con->prepare("SELECT c.course_id, c.course_code, c.course_name, c.description,
                            CONCAT(u.first_name, ' ', u.last_name) as faculty_name,
                            CASE WHEN csl.student_id IS NOT NULL THEN 'enrolled'
