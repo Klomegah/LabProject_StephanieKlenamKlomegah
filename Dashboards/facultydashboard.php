@@ -7,8 +7,11 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Check if user is faculty
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
+// Check if user is faculty or faculty intern (exists in faculty table)
+require_once '../PHP/faculty_check.php';
+require_once '../PHP/db.php';
+
+if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     header("Location: studentdashboard.php");
     exit();
 }
@@ -31,6 +34,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
         <nav>
             <ul>
                 <li><a href="#course-management">Course Management</a></li>
+                <li><a href="#session-management">Session Management</a></li>
+                <li><a href="#attendance-marking">Mark Attendance</a></li>
                 <li><a href="#enrollment-requests">Enrollment Requests</a></li>
                 <li><a href="#" onclick="logout(); return false;">Logout</a></li>
             </ul>
@@ -63,6 +68,72 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
                     </tr>
                 </tbody>
             </table>
+        </section>
+
+        <!-- Session Management Section -->
+        <section id="session-management">
+            <h2>Session Management</h2>
+
+            <button class="primary-btn" onclick="openCreateSessionModal()" style="margin-bottom: 1.5rem;">Create New Session</button>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="session-course-filter">Filter by Course:</label>
+                <select id="session-course-filter" onchange="loadSessions()">
+                    <option value="">All Courses</option>
+                </select>
+            </div>
+
+            <h3>Class Sessions</h3>
+            <table id="sessions-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Topic</th>
+                        <th>Location</th>
+                        <th>Attendance Count</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="loading">Loading sessions...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Attendance Marking Section -->
+        <section id="attendance-marking">
+            <h2>Mark Attendance</h2>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="attendance-session-select">Select Session:</label>
+                <select id="attendance-session-select" onchange="loadAttendanceForSession()">
+                    <option value="">-- Select a session --</option>
+                </select>
+            </div>
+
+            <div id="attendance-display" style="display: none;">
+                <h3>Session Attendance</h3>
+                <p style="margin-bottom: 1rem; color: #666;">Mark attendance for students enrolled in this session's course.</p>
+                <table id="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="loading">Loading attendance...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <!-- Enrollment Requests Section -->
@@ -115,6 +186,50 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'faculty') {
 
                 <button type="submit" class="primary-btn">Create Course</button>
                 <button type="button" onclick="closeModal('create-course-modal')" style="background-color: #6c757d; margin-left: 1rem;">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Session Modal -->
+    <div id="create-session-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('create-session-modal')">&times;</span>
+            <h2>Create New Session</h2>
+            <form id="create-session-form">
+                <div class="form-group">
+                    <label for="session-course">Course *</label>
+                    <select id="session-course" name="session-course" required>
+                        <option value="">-- Select a course --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="session-date">Session Date *</label>
+                    <input type="date" id="session-date" name="session-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="session-start-time">Start Time *</label>
+                    <input type="time" id="session-start-time" name="session-start-time" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="session-end-time">End Time</label>
+                    <input type="time" id="session-end-time" name="session-end-time">
+                </div>
+
+                <div class="form-group">
+                    <label for="session-topic">Topic</label>
+                    <input type="text" id="session-topic" name="session-topic" placeholder="Session topic (optional)">
+                </div>
+
+                <div class="form-group">
+                    <label for="session-location">Location</label>
+                    <input type="text" id="session-location" name="session-location" placeholder="Session location (optional)">
+                </div>
+
+                <button type="submit" class="primary-btn">Create Session</button>
+                <button type="button" onclick="closeModal('create-session-modal')" style="background-color: #6c757d; margin-left: 1rem;">Cancel</button>
             </form>
         </div>
     </div>

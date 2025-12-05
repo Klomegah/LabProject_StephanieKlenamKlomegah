@@ -64,10 +64,18 @@ function displayCourses(courses) {
             <td>
                 <button class="edit-btn" onclick="editCourse(${course.course_id})">Edit</button>
                 <button class="delete-btn" onclick="deleteCourse(${course.course_id})">Delete</button>
+                <button class="primary-btn" onclick="viewCourseStudents(${course.course_id})" style="margin-left: 0.5rem;">Manage Students</button>
             </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+// View and manage students in a course
+async function viewCourseStudents(courseId) {
+    // This would open a modal showing enrolled students with option to remove them
+    // For now, we'll show a message - you can enhance this later
+    showMessage('Student management feature - coming soon. Use enrollment requests to manage students.', 'error');
 }
 
 // Create course
@@ -231,15 +239,32 @@ async function manageRequest(requestId, action) {
     }
 }
 
-// Modal functions
-function openCreateCourseModal() {
-    const modal = document.getElementById('create-course-modal');
-    if (modal) modal.style.display = 'block';
-}
+// Modal functions - make them globally accessible
+window.openCreateCourseModal = function() {
+    try {
+        const modal = document.getElementById('create-course-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Create course modal opened');
+        } else {
+            console.error('Modal not found: create-course-modal');
+            alert('Error: Modal not found. Please refresh the page.');
+        }
+    } catch (error) {
+        console.error('Error opening modal:', error);
+        alert('Error opening modal: ' + error.message);
+    }
+};
 
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'none';
+window.closeModal = function(modalId) {
+    try {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error closing modal:', error);
+    }
 }
 
 // Close modal when clicking outside
@@ -287,15 +312,402 @@ async function logout() {
     }
 }
 
+// Session Management Functions
+let allCourses = [];
+
+// Load sessions
+async function loadSessions() {
+    try {
+        const courseFilter = document.getElementById('session-course-filter')?.value || '';
+        const url = courseFilter ? `${API_BASE}get_sessions.php?course_id=${courseFilter}` : `${API_BASE}get_sessions.php`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displaySessions(result.sessions);
+        } else {
+            showMessage(result.message || 'Failed to load sessions', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+        showMessage('Error loading sessions', 'error');
+    }
+}
+
+// Display sessions in table
+function displaySessions(sessions) {
+    const tbody = document.querySelector('#sessions-table tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (sessions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No sessions found. Create your first session!</td></tr>';
+        return;
+    }
+
+    sessions.forEach(session => {
+        const row = document.createElement('tr');
+        const sessionDate = new Date(session.session_date + 'T' + session.start_time);
+        const timeRange = session.end_time ? 
+            `${new Date(session.session_date + 'T' + session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(session.session_date + 'T' + session.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
+            new Date(session.session_date + 'T' + session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        row.innerHTML = `
+            <td>${session.course_code} - ${session.course_name}</td>
+            <td>${sessionDate.toLocaleDateString()}</td>
+            <td>${timeRange}</td>
+            <td>${session.topic || '-'}</td>
+            <td>${session.location || '-'}</td>
+            <td>${session.attendance_count || 0}</td>
+            <td>
+                <button class="edit-btn" onclick="editSession(${session.session_id})">Edit</button>
+                <button class="primary-btn" onclick="viewSessionAttendance(${session.session_id})">View Attendance</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Create session
+async function createSession(event) {
+    event.preventDefault();
+
+    const courseId = document.getElementById('session-course').value;
+    const date = document.getElementById('session-date').value;
+    const startTime = document.getElementById('session-start-time').value;
+    const endTime = document.getElementById('session-end-time').value || startTime;
+    const topic = document.getElementById('session-topic').value || '';
+    const location = document.getElementById('session-location').value || '';
+
+    if (!courseId || !date || !startTime) {
+        showMessage('Course, date, and start time are required', 'error');
+        return;
+    }
+
+    try {
+        const payload = {
+            course_id: parseInt(courseId),
+            date: date,
+            start_time: startTime,
+            end_time: endTime,
+            topic: topic,
+            location: location
+        };
+        
+        const response = await fetch(`${API_BASE}create_session.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Session created successfully!', 'success');
+            document.getElementById('create-session-form').reset();
+            loadSessions();
+            loadAttendanceSessions(); // Refresh session dropdown
+            closeModal('create-session-modal');
+        } else {
+            showMessage(result.message || 'Failed to create session', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating session:', error);
+        showMessage('Error creating session', 'error');
+    }
+}
+
+// Edit session
+async function editSession(sessionId) {
+    const newTopic = prompt('Enter new topic (or leave blank to keep current):');
+    const newLocation = prompt('Enter new location (or leave blank to keep current):');
+    
+    if (newTopic === null && newLocation === null) {
+        return; // User cancelled
+    }
+
+    try {
+        const payload = { session_id: sessionId };
+        if (newTopic !== null && newTopic !== '') payload.topic = newTopic;
+        if (newLocation !== null && newLocation !== '') payload.location = newLocation;
+
+        const response = await fetch(`${API_BASE}update_session.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Session updated successfully', 'success');
+            loadSessions();
+        } else {
+            showMessage(result.message || 'Failed to update session', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating session:', error);
+        showMessage('Error updating session', 'error');
+    }
+}
+
+// Open create session modal - make it globally accessible
+window.openCreateSessionModal = function() {
+    try {
+        populateCourseDropdowns();
+        const modal = document.getElementById('create-session-modal');
+        if (modal) {
+            modal.style.display = 'block';
+        } else {
+            console.error('Modal not found: create-session-modal');
+        }
+    } catch (error) {
+        console.error('Error opening session modal:', error);
+    }
+};
+
+// Populate course dropdowns
+function populateCourseDropdowns() {
+    const sessionCourseSelect = document.getElementById('session-course');
+    const sessionFilterSelect = document.getElementById('session-course-filter');
+    const attendanceSessionSelect = document.getElementById('attendance-session-select');
+
+    if (sessionCourseSelect) {
+        sessionCourseSelect.innerHTML = '<option value="">-- Select a course --</option>';
+    }
+    if (sessionFilterSelect) {
+        sessionFilterSelect.innerHTML = '<option value="">All Courses</option>';
+    }
+
+    allCourses.forEach(course => {
+        if (sessionCourseSelect) {
+            const option = document.createElement('option');
+            option.value = course.course_id;
+            option.textContent = `${course.course_code} - ${course.course_name}`;
+            sessionCourseSelect.appendChild(option);
+        }
+        if (sessionFilterSelect) {
+            const option = document.createElement('option');
+            option.value = course.course_id;
+            option.textContent = `${course.course_code} - ${course.course_name}`;
+            sessionFilterSelect.appendChild(option);
+        }
+    });
+}
+
+// Attendance Marking Functions
+async function loadAttendanceSessions() {
+    try {
+        const response = await fetch(`${API_BASE}get_sessions.php`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const select = document.getElementById('attendance-session-select');
+            if (select) {
+                select.innerHTML = '<option value="">-- Select a session --</option>';
+                result.sessions.forEach(session => {
+                    const option = document.createElement('option');
+                    option.value = session.session_id;
+                    const sessionDate = new Date(session.session_date + 'T' + session.session_time);
+                    option.textContent = `${session.course_code} - ${sessionDate.toLocaleDateString()} ${sessionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    option.dataset.code = session.attendance_code;
+                    select.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading attendance sessions:', error);
+    }
+}
+
+// View session attendance
+async function viewSessionAttendance(sessionId) {
+    document.getElementById('attendance-session-select').value = sessionId;
+    loadAttendanceForSession();
+}
+
+// Load attendance for selected session
+async function loadAttendanceForSession() {
+    const sessionId = document.getElementById('attendance-session-select').value;
+
+    if (!sessionId) {
+        document.getElementById('attendance-display').style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}get_attendance.php?session_id=${sessionId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            document.getElementById('attendance-display').style.display = 'block';
+            displayAttendance(result.attendance, sessionId);
+        } else {
+            showMessage(result.message || 'Failed to load attendance', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading attendance:', error);
+        showMessage('Error loading attendance', 'error');
+    }
+}
+
+// Display attendance in table
+function displayAttendance(attendance, sessionId) {
+    const tbody = document.querySelector('#attendance-table tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (attendance.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No students enrolled</td></tr>';
+        return;
+    }
+
+        attendance.forEach(record => {
+        const row = document.createElement('tr');
+        const statusClass = `status-${record.status}`;
+        const checkInTime = record.check_in_time ? record.check_in_time : 'Not marked';
+        row.innerHTML = `
+            <td>${record.first_name} ${record.last_name}</td>
+            <td>${record.email}</td>
+            <td><span class="status-badge ${statusClass}">${record.status}</span></td>
+            <td>
+                ${record.attendance_id ? 
+                    `<span style="color: #666;">Checked in: ${checkInTime}</span>
+                     <button class="edit-btn" onclick="markStudentAttendance(${sessionId}, ${record.student_id}, 'present')" style="margin-left: 0.5rem;">Update</button>` :
+                    `<button class="primary-btn" onclick="markStudentAttendance(${sessionId}, ${record.student_id}, 'present')">Mark Present</button>`
+                }
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Mark student attendance
+async function markStudentAttendance(sessionId, studentId, status = 'present') {
+    try {
+        const response = await fetch(`${API_BASE}mark_attendance.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                student_id: studentId,
+                status: status
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Attendance marked successfully', 'success');
+            loadAttendanceForSession();
+            loadSessions(); // Refresh session list to update count
+        } else {
+            showMessage(result.message || 'Failed to mark attendance', 'error');
+        }
+    } catch (error) {
+        console.error('Error marking attendance:', error);
+        showMessage('Error marking attendance', 'error');
+    }
+}
+
+// Remove student from course
+async function removeStudentFromCourse(courseId, studentId, studentName) {
+    if (!confirm(`Are you sure you want to remove ${studentName} from this course?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}remove_student.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                student_id: studentId
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage(result.message, 'success');
+            loadCourses(); // Refresh courses
+        } else {
+            showMessage(result.message || 'Failed to remove student', 'error');
+        }
+    } catch (error) {
+        console.error('Error removing student:', error);
+        showMessage('Error removing student', 'error');
+    }
+}
+
+// Make sure functions are available immediately (not just after DOMContentLoaded)
+// This ensures onclick handlers work even if DOMContentLoaded hasn't fired yet
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    loadCourses();
+    console.log('Faculty dashboard initialized');
+    loadCourses().then(() => {
+        // Store courses for dropdowns
+        fetch(`${API_BASE}get_courses.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                allCourses = result.courses;
+                populateCourseDropdowns();
+            }
+        });
+    });
     loadRequests();
+    loadSessions();
+    loadAttendanceSessions();
 
-    // Set up form submission
+    // Set up form submissions
     const createForm = document.getElementById('create-course-form');
     if (createForm) {
         createForm.addEventListener('submit', createCourse);
+    }
+
+    const createSessionForm = document.getElementById('create-session-form');
+    if (createSessionForm) {
+        createSessionForm.addEventListener('submit', createSession);
     }
 });
 
