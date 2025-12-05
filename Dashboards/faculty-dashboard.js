@@ -18,14 +18,31 @@ function showMessage(message, type = 'success') {
 async function loadCourses() {
     try {
         const response = await fetch(`${API_BASE}get_courses.php`, {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
         });
 
-        const result = await response.json();
+        // Check if response is OK
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Try to parse JSON response
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Courses response:', responseText);
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.error('JSON parse error:', jsonError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
+
+        console.log('Courses result:', result);
 
         if (result.success) {
             displayCourses(result.courses);
@@ -34,27 +51,32 @@ async function loadCourses() {
         }
     } catch (error) {
         console.error('Error loading courses:', error);
-        showMessage('Error loading courses', 'error');
+        showMessage('Error loading courses: ' + error.message, 'error');
     }
 }
 
 // Display courses in table
 function displayCourses(courses) {
     const tbody = document.querySelector('#courses-table tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('Courses table tbody not found');
+        return;
+    }
 
     tbody.innerHTML = '';
 
-    if (courses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No courses found. Create your first course!</td></tr>';
+    if (!courses || courses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No courses found. Create your first course!</td></tr>';
         return;
     }
+
+    console.log('Displaying courses:', courses);
 
     courses.forEach(course => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${course.course_code}</td>
-            <td>${course.course_name}</td>
+            <td>${course.course_code || 'N/A'}</td>
+            <td>${course.course_name || 'N/A'}</td>
             <td>${course.enrolled_students || 0}</td>
             <td>
                 <span class="status-badge ${course.pending_requests > 0 ? 'status-pending' : ''}">
@@ -134,10 +156,13 @@ async function createCourse(event) {
         if (result.success) {
             showMessage('Course created successfully!', 'success');
             document.getElementById('create-course-form').reset();
-            loadCourses();
             // Close modal if open
             const modal = document.getElementById('create-course-modal');
             if (modal) modal.style.display = 'none';
+            // Reload courses after a short delay to ensure the course is saved
+            setTimeout(() => {
+                loadCourses();
+            }, 500);
         } else {
             showMessage(result.message || 'Failed to create course', 'error');
         }
