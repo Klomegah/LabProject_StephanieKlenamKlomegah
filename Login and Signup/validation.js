@@ -44,7 +44,6 @@ if (errors.length > 0) {
     return; //stop further execution
 }
 
-
 // Async function to handle form submission
 let endpoint = '';
 let payload={};
@@ -83,76 +82,27 @@ try {
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
     });
 
-    // Try to parse JSON response first (even if status is not OK)
-    let result;
-    const responseText = await response.text();
-    console.log('Response text:', responseText);
+    const result = await response.json();
     
-    try {
-        result = JSON.parse(responseText);
-        console.log('Parsed result:', result);
-    } catch (jsonError) {
-        console.error('JSON parse error:', jsonError);
-        console.error('Response was:', responseText);
-        // If we can't parse JSON, show the raw response or a generic error
-        error_message.innerText = 'Invalid response from server. Please try again.';
-        error_message.style.display = 'block';
-        setTimeout(() => {
-            error_message.style.display = 'none';
-            error_message.innerText = '';
-        }, 5000);
-        return;
-    }
-
-    // If response is not OK but we have a JSON result with a message, use that
-    if (!response.ok) {
-        if (result && result.message) {
-            error_message.innerText = result.message;
-        } else {
-            error_message.innerText = `Server error (${response.status}). Please try again.`;
-        }
-        error_message.style.display = 'block';
-        setTimeout(() => {
-            error_message.style.display = 'none';
-            error_message.innerText = '';
-        }, 5000);
-        return;
-    }
-
-    console.log('Checking result.success:', result.success);
-    console.log('Result role:', result.role);
-
-    if(result.success === true){
-        // Hide any error messages before redirecting
-        error_message.style.display = 'none';
-        error_message.innerText = '';
-        
-        // Redirect to appropriate dashboard based on role
+    if((endpoint =='../PHP/signup.php' && result.success) || (endpoint =='../PHP/login.php' && result.success)){
+        //Redirect to appropriate dashboard based on role
         const role = result.role || 'student';
-        console.log('Redirecting with role:', role);
-        
         if (role === 'faculty') {
             // Check if this is a faculty intern (only set during signup)
             if (result.is_faculty_intern === true) {
-                console.log('Redirecting to faculty intern dashboard');
                 window.location.href = '../Dashboards/facultyinterndashboard.php';
             } else {
-                console.log('Redirecting to faculty dashboard');
                 window.location.href = '../Dashboards/facultydashboard.php';
             }
         } else {
-            console.log('Redirecting to student dashboard');
             window.location.href = '../Dashboards/studentdashboard.php';
         }
-
     } else {
-        console.log('Showing error:', result.message);
         error_message.innerText = result.message || 'An error occurred. Please try again.';
         error_message.style.display = 'block';
         
@@ -164,9 +114,8 @@ try {
     }
 } catch (error) {
     console.error('Error:', error);
-    error_message.innerText = error.message || 'An error occurred. Please try again.';
+    error_message.innerText = 'An error occurred. Please try again.';
     error_message.style.display = 'block';
-
     //Auto-hide error message after 5 seconds
     setTimeout(() => {
         error_message.style.display = 'none';
@@ -175,8 +124,6 @@ try {
 }
 
 });
-
-
 
 // Validation functions
 function getSignUpErrors(firstname, lastname, email, password, confirm_password){
@@ -265,7 +212,6 @@ function getLoginErrors(email, password){
 
     return errors;
 }
-
 
 const allInputs = [firstname_input, lastname_input, email_input, password_input, confirm_password_input, role_input].filter(input => input !== null);
 
