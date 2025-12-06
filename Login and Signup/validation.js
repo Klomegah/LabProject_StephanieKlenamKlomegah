@@ -32,15 +32,11 @@ form.addEventListener('submit', async (e) => {
 
 if (errors.length > 0) {
     e.preventDefault();
-    error_message.innerText = errors.join('. ');
-    error_message.style.display = 'block';
-
-    //Auto-hide error message after 5 seconds
-    setTimeout(() => {
-        error_message.style.display = 'none';
-        error_message.innerText = '';
-    }, 5000)
-
+    Swal.fire({
+        title: "Validation Error",
+        text: errors.join('. '),
+        icon: "warning"
+    });
     return; //stop further execution
 }
 
@@ -87,41 +83,68 @@ try {
         body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
+    let result;
+    try {
+        result = await response.json();
+    } catch (jsonError) {
+        // If JSON parsing fails, show a user-friendly error
+        Swal.fire({
+            title: "Error",
+            text: "Invalid response from server. Please try again.",
+            icon: "error"
+        });
+        return;
+    }
     
     if((endpoint =='../PHP/signup.php' && result.success) || (endpoint =='../PHP/login.php' && result.success)){
-        //Redirect to appropriate dashboard based on role
-        const role = result.role || 'student';
-        if (role === 'faculty') {
-            // Check if this is a faculty intern (only set during signup)
-            if (result.is_faculty_intern === true) {
-                window.location.href = '../Dashboards/facultyinterndashboard.php';
-            } else {
-                window.location.href = '../Dashboards/facultydashboard.php';
-            }
+        // Show success message
+        if (endpoint == '../PHP/signup.php') {
+            Swal.fire({
+                title: "Success!",
+                text: "Your account has been created successfully!",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else {
-            window.location.href = '../Dashboards/studentdashboard.php';
+            Swal.fire({
+                title: "Login Successful!",
+                text: `Welcome back!`,
+                icon: "success",
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
-    } else {
-        error_message.innerText = result.message || 'An error occurred. Please try again.';
-        error_message.style.display = 'block';
         
-        //Auto-hide error message after 5 seconds
+        // Redirect to appropriate dashboard based on role after a short delay
         setTimeout(() => {
-            error_message.style.display = 'none';
-            error_message.innerText = '';
-        }, 5000);
+            const role = result.role || 'student';
+            if (role === 'faculty') {
+                // Check if this is a faculty intern (only set during signup)
+                if (result.is_faculty_intern === true) {
+                    window.location.href = '../Dashboards/facultyinterndashboard.php';
+                } else {
+                    window.location.href = '../Dashboards/facultydashboard.php';
+                }
+            } else {
+                window.location.href = '../Dashboards/studentdashboard.php';
+            }
+        }, endpoint == '../PHP/signup.php' ? 2000 : 1500);
+    } else {
+        Swal.fire({
+            title: "Error",
+            text: result.message || 'An error occurred. Please try again.',
+            icon: "error"
+        });
     }
     
 } catch (error) {
     console.error('Error:', error);
-    error_message.innerText = 'An error occurred. Please try again.';
-    error_message.style.display = 'block';
-    //Auto-hide error message after 5 seconds
-    setTimeout(() => {
-        error_message.style.display = 'none';
-        error_message.innerText = '';
-    }, 5000);
+    Swal.fire({
+        title: "Error",
+        text: "Server error occurred. Please try again.",
+        icon: "error"
+    });
 }
 
 });
