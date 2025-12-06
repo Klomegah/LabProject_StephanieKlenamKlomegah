@@ -66,7 +66,13 @@ if(password_verify($password, $user['password_hash'])){
         $student_stmt->close();
     }
 
-    echo json_encode(["success"=>true,"message"=>"Login successful", "role" => $_SESSION['role']]);
+    // Note: Faculty intern detection happens in dashboard_router.php
+    // For now, return the role as stored in database
+    echo json_encode([
+        "success" => true,
+        "message" => "Login successful", 
+        "role" => $_SESSION['role']
+    ]);
 
 } else {
     // Password is incorrect

@@ -119,8 +119,9 @@ try {
         const role = result.role || 'student';
         console.log('Redirecting with role:', role);
         
-        if (role === 'faculty' || role === 'facultyintern') {
-            if (result.is_faculty_intern) {
+        if (role === 'faculty') {
+            // Check if this is a faculty intern (only set during signup)
+            if (result.is_faculty_intern === true) {
                 console.log('Redirecting to faculty intern dashboard');
                 window.location.href = '../Dashboards/facultyinterndashboard.php';
             } else {
