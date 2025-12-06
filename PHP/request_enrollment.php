@@ -19,17 +19,13 @@ require_once 'auth_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in
-// ============================================================================
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Verify user is a student (must exist in students table)
-// ============================================================================
 $user_id = $_SESSION['user_id'];
 $check_stmt = $con->prepare("SELECT student_id FROM students WHERE student_id = ?");
 $check_stmt->bind_param("i", $user_id);
@@ -43,9 +39,7 @@ if ($check_result->num_rows === 0) {
 }
 $check_stmt->close();
 
-// ============================================================================
 // STEP 3: Get and validate input data
-// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
 if (!isset($input['course_id'])) {
@@ -56,9 +50,7 @@ if (!isset($input['course_id'])) {
 $course_id = intval($input['course_id']);
 $student_id = $user_id;
 
-// ============================================================================
 // STEP 4: Verify the course exists in the database
-// ============================================================================
 $stmt = $con->prepare("SELECT course_id FROM courses WHERE course_id = ?");
 $stmt->bind_param("i", $course_id);
 $stmt->execute();
@@ -71,9 +63,7 @@ if ($result->num_rows === 0) {
 }
 $stmt->close();
 
-// ============================================================================
 // STEP 5: Check if student is already enrolled in this course
-// ============================================================================
 $stmt = $con->prepare("SELECT student_id FROM course_student_list WHERE course_id = ? AND student_id = ?");
 $stmt->bind_param("ii", $course_id, $student_id);
 $stmt->execute();
@@ -86,9 +76,7 @@ if ($result->num_rows > 0) {
 }
 $stmt->close();
 
-// ============================================================================
 // STEP 6: Enroll student in course (immediate enrollment - no approval needed)
-// ============================================================================
 // Note: Since there's no course_requests table, students are auto-enrolled
 // when they request to join. The enrollment is added directly to course_student_list.
 $stmt = $con->prepare("INSERT INTO course_student_list (course_id, student_id) VALUES (?, ?)");

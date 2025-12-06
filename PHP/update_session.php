@@ -22,17 +22,13 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in and has faculty access
-// ============================================================================
 if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Parse and validate input data
-// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
 if ($input === null || !isset($input['session_id'])) {
@@ -43,9 +39,7 @@ if ($input === null || !isset($input['session_id'])) {
 $faculty_id = $_SESSION['user_id'];
 $session_id = intval($input['session_id']);
 
-// ============================================================================
 // STEP 3: Verify session belongs to a course owned by this faculty
-// ============================================================================
 // This ensures faculty can only update sessions for their own courses
 $check_stmt = $con->prepare("SELECT s.session_id FROM sessions s
                              INNER JOIN courses c ON s.course_id = c.course_id
@@ -61,9 +55,7 @@ if ($check_result->num_rows === 0) {
 }
 $check_stmt->close();
 
-// ============================================================================
 // STEP 4: Build dynamic UPDATE query based on provided fields
-// ============================================================================
 // Only update fields that are provided in the request
 $update_fields = [];
 $params = [];
@@ -104,9 +96,7 @@ if (empty($update_fields)) {
     exit();
 }
 
-// ============================================================================
 // STEP 5: Execute UPDATE query
-// ============================================================================
 $params[] = $session_id;
 $types .= "i";
 

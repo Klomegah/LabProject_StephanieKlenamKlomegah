@@ -22,31 +22,23 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in
-// ============================================================================
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Determine user role and get optional course_id filter
-// ============================================================================
 $user_id = $_SESSION['user_id'];
 $is_faculty_user = isFaculty($con, $user_id);
 
 if ($is_faculty_user) {
-    // ========================================================================
     // FACULTY QUERY: Get sessions for courses they teach
-    // ========================================================================
     $faculty_id = $user_id;
     $course_id = isset($_GET['course_id']) ? intval($_GET['course_id']) : null;
     
     if ($course_id) {
-        // ====================================================================
         // Get sessions for a specific course with attendance count
-        // ====================================================================
         $stmt = $con->prepare("SELECT s.session_id, s.course_id, s.date as session_date, s.start_time, s.end_time, 
                                s.topic, s.location,
                                c.course_code, c.course_name,
@@ -59,9 +51,8 @@ if ($is_faculty_user) {
                                ORDER BY s.date DESC, s.start_time DESC");
         $stmt->bind_param("ii", $course_id, $faculty_id);
     } else {
-        // ====================================================================
+        
         // Get all sessions for all courses taught by this faculty
-        // ====================================================================
         $stmt = $con->prepare("SELECT s.session_id, s.course_id, s.date as session_date, s.start_time, s.end_time,
                                s.topic, s.location,
                                c.course_code, c.course_name,
@@ -75,16 +66,12 @@ if ($is_faculty_user) {
         $stmt->bind_param("i", $faculty_id);
     }
 } else {
-    // ========================================================================
     // STUDENT QUERY: Get sessions for enrolled courses
-    // ========================================================================
     $student_id = $user_id;
     $course_id = isset($_GET['course_id']) ? intval($_GET['course_id']) : null;
     
     if ($course_id) {
-        // ====================================================================
         // Get sessions for specific course with student's attendance status
-        // ====================================================================
         // Verify student is enrolled in this course
         $check_stmt = $con->prepare("SELECT course_id FROM course_student_list WHERE course_id = ? AND student_id = ?");
         $check_stmt->bind_param("ii", $course_id, $student_id);
@@ -108,9 +95,7 @@ if ($is_faculty_user) {
                                ORDER BY s.date DESC, s.start_time DESC");
         $stmt->bind_param("ii", $student_id, $course_id);
     } else {
-        // ====================================================================
         // Get all sessions for all enrolled courses
-        // ====================================================================
         $stmt = $con->prepare("SELECT s.session_id, s.course_id, s.date as session_date, s.start_time, s.end_time,
                                s.topic, s.location,
                                c.course_code, c.course_name,
@@ -124,10 +109,7 @@ if ($is_faculty_user) {
         $stmt->bind_param("ii", $student_id, $student_id);
     }
 }
-
-// ============================================================================
 // STEP 3: Execute query and return results
-// ============================================================================
 $stmt->execute();
 $result = $stmt->get_result();
 $sessions = [];

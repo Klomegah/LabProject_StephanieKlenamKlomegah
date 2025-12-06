@@ -21,25 +21,19 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in
-// ============================================================================
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Determine user role and get session_id from query parameter
-// ============================================================================
 $user_id = $_SESSION['user_id'];
 $is_faculty_user = isFaculty($con, $user_id);
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : null;
 
 if ($is_faculty_user) {
-    // ========================================================================
     // FACULTY QUERY: Get attendance for all students in a session
-    // ========================================================================
     $faculty_id = $user_id;
     
     if (!$session_id) {
@@ -47,9 +41,7 @@ if ($is_faculty_user) {
         exit();
     }
     
-    // ========================================================================
     // STEP 3A: Verify session belongs to this faculty's course
-    // ========================================================================
     $check_stmt = $con->prepare("SELECT s.session_id FROM sessions s
                                  INNER JOIN courses c ON s.course_id = c.course_id
                                  WHERE s.session_id = ? AND c.faculty_id = ?");
@@ -64,9 +56,7 @@ if ($is_faculty_user) {
     }
     $check_stmt->close();
     
-    // ========================================================================
     // STEP 4A: Get all enrolled students with their attendance status
-    // ========================================================================
     // Returns: student info + attendance status (present/absent/late) or 'absent' if not marked
     $stmt = $con->prepare("SELECT 
                            csl.student_id,
@@ -87,15 +77,11 @@ if ($is_faculty_user) {
     $stmt->bind_param("i", $session_id);
     
 } else {
-    // ========================================================================
     // STUDENT QUERY: Get their own attendance records
-    // ========================================================================
     $student_id = $user_id;
     
     if ($session_id) {
-        // ====================================================================
         // Get attendance for specific session
-        // ====================================================================
         $stmt = $con->prepare("SELECT a.attendance_id, a.session_id, a.check_in_time, a.status,
                                s.date as session_date, s.start_time,
                                c.course_code, c.course_name
@@ -105,9 +91,7 @@ if ($is_faculty_user) {
                                WHERE a.student_id = ? AND a.session_id = ?");
         $stmt->bind_param("ii", $student_id, $session_id);
     } else {
-        // ====================================================================
         // Get all attendance records for this student
-        // ====================================================================
         $stmt = $con->prepare("SELECT a.attendance_id, a.session_id, a.check_in_time, a.status,
                                s.date as session_date, s.start_time,
                                c.course_code, c.course_name
@@ -120,9 +104,7 @@ if ($is_faculty_user) {
     }
 }
 
-// ============================================================================
 // STEP 5: Execute query and return results
-// ============================================================================
 $stmt->execute();
 $result = $stmt->get_result();
 $attendance = [];

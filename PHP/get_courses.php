@@ -23,27 +23,19 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 try {
-    // ============================================================================
     // STEP 1: Verify user is logged in
-    // ============================================================================
     if (!isset($_SESSION['user_id'])) {
         echo json_encode(["success" => false, "message" => "Unauthorized."]);
         exit();
     }
 
-    // ============================================================================
     // STEP 2: Determine if user is faculty or student
-    // ============================================================================
     $user_id = $_SESSION['user_id'];
     $is_faculty_user = isFaculty($con, $user_id);
 
-    // ============================================================================
     // STEP 3: Build query based on user role
-    // ============================================================================
     if ($is_faculty_user) {
-        // ========================================================================
         // FACULTY QUERY: Get courses taught by this faculty
-        // ========================================================================
         // Returns: course info + count of enrolled students
         $faculty_id = $user_id;
         

@@ -19,9 +19,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 try {
-    // ============================================================================
     // STEP 1: Verify user is logged in and is faculty/faculty intern
-    // ============================================================================
     if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
         echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
         exit();
@@ -29,9 +27,7 @@ try {
 
     $faculty_id = $_SESSION['user_id'];
 
-    // ============================================================================
     // STEP 2: Get all enrolled students for courses taught by this faculty
-    // ============================================================================
     // Query joins: courses → course_student_list → students → users
     // This gets all students enrolled in any course taught by this faculty
     $stmt = $con->prepare("SELECT 
@@ -60,9 +56,7 @@ try {
         throw new Exception("Execute failed: " . $stmt->error);
     }
     
-    // ============================================================================
     // STEP 3: Build array of enrolled students
-    // ============================================================================
     $result = $stmt->get_result();
     $requests = [];
 

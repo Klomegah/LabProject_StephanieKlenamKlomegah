@@ -19,17 +19,13 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in and is faculty/faculty intern
-// ============================================================================
 if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Get and validate input data
-// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
 if ($input === null || !isset($input['course_id']) || !isset($input['student_id']) || !isset($input['action'])) {
@@ -47,9 +43,7 @@ if ($action !== 'remove') {
     exit();
 }
 
-// ============================================================================
 // STEP 3: Verify course belongs to this faculty member
-// ============================================================================
 $stmt = $con->prepare("SELECT course_id FROM courses WHERE course_id = ? AND faculty_id = ?");
 $stmt->bind_param("ii", $course_id, $faculty_id);
 $stmt->execute();
@@ -62,9 +56,7 @@ if ($result->num_rows === 0) {
 }
 $stmt->close();
 
-// ============================================================================
 // STEP 4: Remove student from course_student_list table
-// ============================================================================
 // This deletes the enrollment record, effectively removing the student from the course
 $stmt = $con->prepare("DELETE FROM course_student_list WHERE course_id = ? AND student_id = ?");
 $stmt->bind_param("ii", $course_id, $student_id);

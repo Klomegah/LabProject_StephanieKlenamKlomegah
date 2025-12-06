@@ -23,17 +23,13 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in and has faculty access
-// ============================================================================
 if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Parse and validate input data from request
-// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
 if (!isset($input['course_code'], $input['course_name'])) {
@@ -45,9 +41,7 @@ $course_code = trim($input['course_code']);
 $course_name = trim($input['course_name']);
 $course_description = isset($input['course_description']) ? trim($input['course_description']) : '';
 
-// ============================================================================
 // STEP 3: Get faculty ID and ensure it exists in faculty table
-// ============================================================================
 // If user is not in faculty table yet, add them automatically
 // This allows faculty interns to create courses
 $faculty_id = $_SESSION['user_id'];
@@ -76,17 +70,13 @@ if ($check_result->num_rows === 0) {
 }
 $check_stmt->close();
 
-// ============================================================================
 // STEP 4: Validate that course code and name are not empty
-// ============================================================================
 if (empty($course_code) || empty($course_name)) {
     echo json_encode(["success" => false, "message" => "Course code and name cannot be empty."]);
     exit();
 }
 
-// ============================================================================
 // STEP 5: Check if course code already exists (course_code must be unique)
-// ============================================================================
 $stmt = $con->prepare("SELECT course_id FROM courses WHERE course_code = ?");
 $stmt->bind_param("s", $course_code);
 $stmt->execute();
@@ -99,9 +89,7 @@ if ($result->num_rows > 0) {
 }
 $stmt->close();
 
-// ============================================================================
 // STEP 6: Insert new course into courses table
-// ============================================================================
 // Columns: course_code, course_name, description, faculty_id
 $stmt = $con->prepare("INSERT INTO courses (course_code, course_name, description, faculty_id) VALUES (?, ?, ?, ?)");
 

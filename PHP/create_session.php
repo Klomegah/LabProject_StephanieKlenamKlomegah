@@ -25,17 +25,13 @@ require_once 'faculty_check.php';
 
 header('Content-Type: application/json');
 
-// ============================================================================
 // STEP 1: Verify user is logged in and has faculty access
-// ============================================================================
 if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-// ============================================================================
 // STEP 2: Parse and validate input data
-// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
 if ($input === null) {
@@ -58,9 +54,7 @@ $end_time = isset($input['end_time']) ? $input['end_time'] : $start_time;
 $topic = isset($input['topic']) ? $input['topic'] : '';
 $location = isset($input['location']) ? $input['location'] : '';
 
-// ============================================================================
 // STEP 3: Verify the course belongs to this faculty member
-// ============================================================================
 // This ensures faculty can only create sessions for their own courses
 $check_stmt = $con->prepare("SELECT course_id FROM courses WHERE course_id = ? AND faculty_id = ?");
 $check_stmt->bind_param("ii", $course_id, $faculty_id);
@@ -74,9 +68,7 @@ if ($check_result->num_rows === 0) {
 }
 $check_stmt->close();
 
-// ============================================================================
 // STEP 4: Insert new session into sessions table
-// ============================================================================
 // Columns: course_id, date, start_time, end_time, topic, location
 // The session_id (auto-generated) will be used as the attendance code
 $stmt = $con->prepare("INSERT INTO sessions (course_id, date, start_time, end_time, topic, location) VALUES (?, ?, ?, ?, ?, ?)");
