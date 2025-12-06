@@ -32,10 +32,13 @@ function showMessage(message, type = 'success') {
 // Load courses
 async function loadCourses() {
     try {
-        const response = await fetch(`${API_BASE}get_courses.php`, {
+        // Add cache busting to ensure fresh data
+        const cacheBuster = '?t=' + new Date().getTime();
+        const response = await fetch(`${API_BASE}get_courses.php${cacheBuster}`, {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         });
 
@@ -286,14 +289,44 @@ window.onclick = function(event) {
     });
 }
 
-// Placeholder functions for edit/delete
+// Edit course function
 function editCourse(courseId) {
     showMessage('Edit functionality coming soon', 'error');
 }
 
-function deleteCourse(courseId) {
-    if (confirm('Are you sure you want to delete this course?')) {
-        showMessage('Delete functionality coming soon', 'error');
+// Delete course function
+async function deleteCourse(courseId) {
+    if (!confirm('Are you sure you want to delete this course? This will also delete all sessions, enrollments, and attendance records for this course. This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}delete_course.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage(result.message, 'success');
+            // Reload courses immediately after deletion
+            loadCourses();
+            // Also reload sessions and requests in case they were affected
+            loadSessions();
+            loadRequests();
+        } else {
+            showMessage(result.message || 'Failed to delete course', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting course:', error);
+        showMessage('Error deleting course', 'error');
     }
 }
 

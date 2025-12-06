@@ -27,19 +27,19 @@ if($con->connect_error){
 
 // Alternative approach using environment file for better security and flexibility
 
-$env = parse_ini_file('./../env/connect.env');
+$env = parse_ini_file('../env/connect.env');
 
-$conn= new mysqli(
+// Use $con (not $conn) to match all other PHP files
+$con = new mysqli(
     $env['host'],
     $env['user'],
     $env['password'],
     $env['database']
 );
 
-   
-   // Check connection
-   if ($conn->connect_error) {
-    // Throw exception 
-    throw new Exception("Connection failed: " . $conn->connect_error);
+// Check connection
+if ($con->connect_error) {
+    die("Connection failed: " . $con->connect_error);
 }
+?>
 

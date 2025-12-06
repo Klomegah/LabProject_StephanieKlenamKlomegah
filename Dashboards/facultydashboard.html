@@ -29,7 +29,10 @@
         <section id="course-management">
             <h2>Course Management</h2>
 
-            <button class="primary-btn" onclick="openCreateCourseModal()" style="margin-bottom: 1.5rem;">Create New Course</button>
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                <button class="primary-btn" onclick="openCreateCourseModal()">Create New Course</button>
+                <button class="edit-btn" onclick="loadCourses(); showMessage('Courses refreshed', 'success');" title="Refresh courses list">🔄 Refresh</button>
+            </div>
 
             <h3>My Courses</h3>
             <table id="courses-table">
