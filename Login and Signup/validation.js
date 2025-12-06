@@ -89,22 +89,40 @@ try {
         body: JSON.stringify(payload)
     });
 
-    // Check if response is OK
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Try to parse JSON response
+    // Try to parse JSON response first (even if status is not OK)
     let result;
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
+    
     try {
-        const responseText = await response.text();
-        console.log('Response text:', responseText);
         result = JSON.parse(responseText);
         console.log('Parsed result:', result);
     } catch (jsonError) {
         console.error('JSON parse error:', jsonError);
-        console.error('Response was:', await response.text());
-        throw new Error('Invalid response from server. Please try again.');
+        console.error('Response was:', responseText);
+        // If we can't parse JSON, show the raw response or a generic error
+        error_message.innerText = 'Invalid response from server. Please try again.';
+        error_message.style.display = 'block';
+        setTimeout(() => {
+            error_message.style.display = 'none';
+            error_message.innerText = '';
+        }, 5000);
+        return;
+    }
+
+    // If response is not OK but we have a JSON result with a message, use that
+    if (!response.ok) {
+        if (result && result.message) {
+            error_message.innerText = result.message;
+        } else {
+            error_message.innerText = `Server error (${response.status}). Please try again.`;
+        }
+        error_message.style.display = 'block';
+        setTimeout(() => {
+            error_message.style.display = 'none';
+            error_message.innerText = '';
+        }, 5000);
+        return;
     }
 
     console.log('Checking result.success:', result.success);
