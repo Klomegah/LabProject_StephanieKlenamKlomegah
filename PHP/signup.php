@@ -1,12 +1,9 @@
 <?php
 
+session_start();
 require_once 'db.php';
 
-// echo post object for debugging
-
-// INFO: the fix to the issue; Instead of using POST when passing the json, usue the line below
-
-// $input =json_decode(file_get_contents("php://input"),true); /// if using JSON
+header('Content-Type: application/json');
 
 $input = json_decode(file_get_contents("php://input"), true);
 if ($input === null) {
@@ -18,8 +15,6 @@ if ($input === null) {
     exit();
 }
 
-
-
 //validate input here
 if(!isset($input['firstname'], $input['lastname'], $input['email'], $input['password'], $input['confirm_password'])){
     $state=["success"=>false,"message"=>"Invalid Input"];
@@ -27,12 +22,17 @@ if(!isset($input['firstname'], $input['lastname'], $input['email'], $input['pass
     exit();
 }
 
-//$input = $_POST;
-
 $fname=$input['firstname'];
 $lname=$input['lastname'];
 $email=$input['email'];
 $password=password_hash($input['password'],PASSWORD_DEFAULT);
+
+// Get role from input, default to 'student'
+$role_input = isset($input['role']) ? $input['role'] : 'student';
+$is_faculty_intern = ($role_input === 'facultyintern');
+
+// Store as 'faculty' in database if it's facultyintern (since ENUM only allows 'student' or 'faculty')
+$role_for_db = ($role_input === 'facultyintern') ? 'faculty' : $role_input;
 
 //// Variables $varriable name; or $variablename=value;
 //$fname=$_POST['firstname'];
@@ -60,42 +60,76 @@ $password=password_hash($input['password'],PASSWORD_DEFAULT);
 
 // SQL COMMAND
 
-//$c=$con->query($INS_COM);
+$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)";
 
-$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)"; // ?-> where the cvalues will go
-
-//preparing the statement
 $stmt = $con->prepare($INS_COM);
 
-//checking if prepare was successful
 if($stmt===false){
-    $state=["success"=>false,"message"=>"Prepare Failed"];
+    $state=["success"=>false,"message"=>"Prepare Failed: " . $con->error];
     echo json_encode($state);
     exit();
 }
 
-//binding the parameters
-$stmt->bind_param("ssss", $fname, $lname, $email, $password);// Parameters: type(s), values
+$stmt->bind_param("sssss", $fname, $lname, $email, $password, $role_for_db);
 
-//excute
-$excecute_success = $stmt->execute(); //execute
+$excecute_success = $stmt->execute();
 
-//preventing SQL INJECTION: using c->prepare(command)
-//getting the result -Query call $c->query($command);
-// if you use select to see if there are results use $result->num_rows to see number of rows returned
-
-
-// Redirect if insert is successful query retruns true or false 
-if($excecute_success){
-    //header('Location: ../view/login.html');
-    $state=["success"=>true];
+if (!$excecute_success || $stmt->error) {
+    $error_message = $stmt->error ? $stmt->error : "Insert Failed";
+    if (strpos($error_message, 'Duplicate entry') !== false && strpos($error_message, 'email') !== false) {
+        $error_message = "Email already exists. Please use a different email.";
+    } elseif (strpos($error_message, 'Duplicate entry') !== false) {
+        $error_message = "This information already exists in the system.";
+    }
+    $state=["success"=>false, "message"=>$error_message];
     echo json_encode($state);
     exit();
-}else{
-    $state=["success"=>false, "message"=>"Insert Failed"];
-    echo json_encode($state);
-    // echo "Failed Retry";
 }
+
+$user_id = $con->insert_id;
+$stmt->close();
+
+// Insert into students or faculty table based on role
+if ($role_for_db === 'student') {
+    $student_stmt = $con->prepare("INSERT INTO students (student_id, first_name, last_name, email) VALUES (?, ?, ?, ?)");
+    $student_stmt->bind_param("isss", $user_id, $fname, $lname, $email);
+    $student_insert = $student_stmt->execute();
+    if (!$student_insert) {
+        $state=["success"=>false, "message"=>"Failed to create student record: " . $student_stmt->error];
+        echo json_encode($state);
+        exit();
+    }
+    $student_stmt->close();
+} elseif ($role_for_db === 'faculty') {
+    $faculty_stmt = $con->prepare("INSERT INTO faculty (faculty_id, first_name, last_name, email) VALUES (?, ?, ?, ?)");
+    $faculty_stmt->bind_param("isss", $user_id, $fname, $lname, $email);
+    $faculty_insert = $faculty_stmt->execute();
+    if (!$faculty_insert) {
+        $state=["success"=>false, "message"=>"Failed to create faculty record: " . $faculty_stmt->error];
+        echo json_encode($state);
+        exit();
+    }
+    $faculty_stmt->close();
+}
+
+// Set session variables
+$_SESSION['user_id'] = $user_id;
+$_SESSION['first_name'] = $fname;
+$_SESSION['last_name'] = $lname;
+$_SESSION['email'] = $email;
+$_SESSION['role'] = $role_for_db;
+if ($is_faculty_intern) {
+    $_SESSION['is_faculty_intern'] = true;
+}
+
+// Return success with role information
+$state = [
+    "success" => true,
+    "role" => $role_for_db,
+    "is_faculty_intern" => $is_faculty_intern
+];
+echo json_encode($state);
+exit();
 
 // if html is rendered in php to check for a submit 
 // $_SERVER['REQUEST_METHOD'] === 'POST'

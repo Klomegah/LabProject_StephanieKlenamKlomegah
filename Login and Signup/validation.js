@@ -119,15 +119,17 @@ try {
         const role = result.role || 'student';
         console.log('Redirecting with role:', role);
         
-        if (role === 'faculty') {
-            console.log('Redirecting to faculty dashboard');
-            window.location.href = '../Dashboards/facultydashboard.php';
+        if (role === 'faculty' || role === 'facultyintern') {
+            if (result.is_faculty_intern) {
+                console.log('Redirecting to faculty intern dashboard');
+                window.location.href = '../Dashboards/facultyinterndashboard.php';
+            } else {
+                console.log('Redirecting to faculty dashboard');
+                window.location.href = '../Dashboards/facultydashboard.php';
+            }
         } else {
             console.log('Redirecting to student dashboard');
             window.location.href = '../Dashboards/studentdashboard.php';
-        } else {
-            console.log('Redirecting faculty intern dashboard by default');
-            window.location.href = '../Dashboards/facultyinterndashboard.php';
         }
 
     } else {

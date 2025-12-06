@@ -172,3 +172,4 @@ if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
 </body>
 </html>
 
+
