@@ -2,6 +2,21 @@
 
 const API_BASE = '../PHP/';
 
+// Modal functions - make them globally accessible
+window.openCreateCourseModal = function() {
+    const modal = document.getElementById('create-course-modal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+};
+
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Show message function
 function showMessage(message, type = 'success') {
     const messageDiv = document.getElementById('message');
@@ -260,33 +275,6 @@ async function removeStudent(courseId, studentId, studentName) {
     }
 }
 
-// Modal functions - make them globally accessible
-window.openCreateCourseModal = function() {
-    try {
-        const modal = document.getElementById('create-course-modal');
-        if (modal) {
-            modal.style.display = 'block';
-            console.log('Create course modal opened');
-        } else {
-            console.error('Modal not found: create-course-modal');
-            alert('Error: Modal not found. Please refresh the page.');
-        }
-    } catch (error) {
-        console.error('Error opening modal:', error);
-        alert('Error opening modal: ' + error.message);
-    }
-};
-
-window.closeModal = function(modalId) {
-    try {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error closing modal:', error);
-    }
-}
 
 // Close modal when clicking outside
 window.onclick = function(event) {
@@ -674,9 +662,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCourses().then(() => {
         // Store courses for dropdowns
         fetch(`${API_BASE}get_courses.php`, {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
         })

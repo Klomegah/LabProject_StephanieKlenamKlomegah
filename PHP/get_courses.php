@@ -54,12 +54,13 @@ try {
         
         $stmt->bind_param("i", $faculty_id);
     } else {
-        // Students see all available courses with their enrollment status
+        // Students and faculty interns see all available courses with their enrollment status
         // Using ONLY the provided tables (no course_requests)
         $student_id = $user_id;
         
         $stmt = $con->prepare("SELECT c.course_id, c.course_code, c.course_name, c.description,
                                CONCAT(u.first_name, ' ', u.last_name) as faculty_name,
+                               (SELECT COUNT(*) FROM course_student_list WHERE course_id = c.course_id) as enrolled_students,
                                CASE WHEN csl.student_id IS NOT NULL THEN 'enrolled'
                                     ELSE 'available' END as enrollment_status
                                FROM courses c

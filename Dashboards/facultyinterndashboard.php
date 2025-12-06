@@ -1,3 +1,23 @@
+<?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../Login and Signup/login.html");
+    exit();
+}
+
+// Check if user is faculty or faculty intern (exists in faculty table)
+require_once '../PHP/faculty_check.php';
+require_once '../PHP/db.php';
+
+if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
+    header("Location: studentdashboard.php");
+    exit();
+}
+
+// If authorized, output the HTML file
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -151,3 +171,4 @@
     <script src="faculty-intern-dashboard.js"></script>
 </body>
 </html>
+
