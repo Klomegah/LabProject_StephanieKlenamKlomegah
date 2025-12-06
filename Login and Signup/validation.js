@@ -112,6 +112,7 @@ try {
             error_message.innerText = '';
         }, 5000);
     }
+    
 } catch (error) {
     console.error('Error:', error);
     error_message.innerText = 'An error occurred. Please try again.';
