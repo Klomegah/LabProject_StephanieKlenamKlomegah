@@ -1,27 +1,52 @@
 <?php
+/**
+ * Get Attendance Reports Endpoint (Student)
+ * 
+ * Generates attendance reports for students showing:
+ * - Daily report: All sessions for a specific date with attendance status
+ * - Overall report: Attendance statistics (total sessions, attended, percentage)
+ * 
+ * Can filter by course_id or show all enrolled courses.
+ * 
+ * Database Tables Used:
+ * - course_student_list: To verify enrollment
+ * - sessions: Session information
+ * - courses: Course information
+ * - attendance: Attendance records
+ */
+
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
 
-// Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in and is student
+// ============================================================================
+// STEP 1: Verify user is logged in and is a student
+// ============================================================================
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
     echo json_encode(["success" => false, "message" => "Unauthorized. Student access required."]);
     exit();
 }
 
+// ============================================================================
+// STEP 2: Get parameters from query string
+// ============================================================================
 $student_id = $_SESSION['student_id'] ?? $_SESSION['user_id'];
 $course_id = isset($_GET['course_id']) ? intval($_GET['course_id']) : null;
 $report_type = isset($_GET['type']) ? $_GET['type'] : 'overall'; // 'daily' or 'overall'
 
 if ($report_type === 'daily') {
-    // Daily attendance report
+    // ========================================================================
+    // DAILY REPORT: Show all sessions for a specific date
+    // ========================================================================
     $date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
     
     if ($course_id) {
-        // Verify enrollment
+        // ====================================================================
+        // Daily report for specific course
+        // ====================================================================
+        // Verify student is enrolled in this course
         $check_stmt = $con->prepare("SELECT course_id FROM course_student_list WHERE course_id = ? AND student_id = ?");
         $check_stmt->bind_param("ii", $course_id, $student_id);
         $check_stmt->execute();
@@ -32,6 +57,7 @@ if ($report_type === 'daily') {
         }
         $check_stmt->close();
         
+        // Get all sessions for this course on this date with attendance status
         $stmt = $con->prepare("SELECT 
                                s.session_id,
                                s.date as session_date,
@@ -47,6 +73,9 @@ if ($report_type === 'daily') {
                                ORDER BY s.start_time");
         $stmt->bind_param("iis", $student_id, $course_id, $date);
     } else {
+        // ====================================================================
+        // Daily report for all enrolled courses
+        // ====================================================================
         $stmt = $con->prepare("SELECT 
                                s.session_id,
                                s.date as session_date,
@@ -64,9 +93,14 @@ if ($report_type === 'daily') {
         $stmt->bind_param("iis", $student_id, $student_id, $date);
     }
 } else {
-    // Overall attendance report
+    // ========================================================================
+    // OVERALL REPORT: Show attendance statistics
+    // ========================================================================
     if ($course_id) {
-        // Verify enrollment
+        // ====================================================================
+        // Overall report for specific course
+        // ====================================================================
+        // Verify student is enrolled in this course
         $check_stmt = $con->prepare("SELECT course_id FROM course_student_list WHERE course_id = ? AND student_id = ?");
         $check_stmt->bind_param("ii", $course_id, $student_id);
         $check_stmt->execute();
@@ -77,7 +111,7 @@ if ($report_type === 'daily') {
         }
         $check_stmt->close();
         
-        // Get overall statistics
+        // Calculate attendance statistics: total sessions, attended sessions, percentage
         $stmt = $con->prepare("SELECT 
                                c.course_id,
                                c.course_code,
@@ -92,6 +126,9 @@ if ($report_type === 'daily') {
                                GROUP BY c.course_id");
         $stmt->bind_param("ii", $student_id, $course_id);
     } else {
+        // ====================================================================
+        // Overall report for all enrolled courses
+        // ====================================================================
         $stmt = $con->prepare("SELECT 
                                c.course_id,
                                c.course_code,
@@ -110,6 +147,9 @@ if ($report_type === 'daily') {
     }
 }
 
+// ============================================================================
+// STEP 3: Execute query and return results
+// ============================================================================
 $stmt->execute();
 $result = $stmt->get_result();
 $reports = [];
