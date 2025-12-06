@@ -370,7 +370,7 @@ function displaySessions(sessions) {
     tbody.innerHTML = '';
 
     if (sessions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No sessions found. Create your first session!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No sessions found. Create your first session!</td></tr>';
         return;
     }
 
@@ -384,13 +384,9 @@ function displaySessions(sessions) {
             <td>${session.course_code} - ${session.course_name}</td>
             <td>${sessionDate.toLocaleDateString()}</td>
             <td>${timeRange}</td>
-            <td>${session.topic || '-'}</td>
-            <td>${session.location || '-'}</td>
             <td><strong style="color: var(--accent-color);">${session.session_id}</strong><br><small>Share this ID with students</small></td>
-            <td>${session.attendance_count || 0}</td>
             <td>
-                <button class="edit-btn" onclick="editSession(${session.session_id})">Edit</button>
-                <button class="primary-btn" onclick="viewSessionAttendance(${session.session_id})">View Attendance</button>
+                <button class="primary-btn" onclick="viewSessionAttendance(${session.session_id})" style="margin-top: 0.5rem;">View Attendance (${session.attendance_count || 0})</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -405,8 +401,6 @@ async function createSession(event) {
     const date = document.getElementById('session-date').value;
     const startTime = document.getElementById('session-start-time').value;
     const endTime = document.getElementById('session-end-time').value || startTime;
-    const topic = document.getElementById('session-topic').value || '';
-    const location = document.getElementById('session-location').value || '';
 
     if (!courseId || !date || !startTime) {
         showMessage('Course, date, and start time are required', 'error');
@@ -418,9 +412,7 @@ async function createSession(event) {
             course_id: parseInt(courseId),
             date: date,
             start_time: startTime,
-            end_time: endTime,
-            topic: topic,
-            location: location
+            end_time: endTime
         };
         
         const response = await fetch(`${API_BASE}create_session.php`, {
@@ -449,42 +441,6 @@ async function createSession(event) {
     }
 }
 
-// Edit session
-async function editSession(sessionId) {
-    const newTopic = prompt('Enter new topic (or leave blank to keep current):');
-    const newLocation = prompt('Enter new location (or leave blank to keep current):');
-    
-    if (newTopic === null && newLocation === null) {
-        return; // User cancelled
-    }
-
-    try {
-        const payload = { session_id: sessionId };
-        if (newTopic !== null && newTopic !== '') payload.topic = newTopic;
-        if (newLocation !== null && newLocation !== '') payload.location = newLocation;
-
-        const response = await fetch(`${API_BASE}update_session.php`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showMessage('Session updated successfully', 'success');
-            loadSessions();
-        } else {
-            showMessage(result.message || 'Failed to update session', 'error');
-        }
-    } catch (error) {
-        console.error('Error updating session:', error);
-        showMessage('Error updating session', 'error');
-    }
-}
 
 // Open create session modal - make it globally accessible
 window.openCreateSessionModal = function() {
@@ -549,9 +505,11 @@ async function loadAttendanceSessions() {
                 result.sessions.forEach(session => {
                     const option = document.createElement('option');
                     option.value = session.session_id;
-                    const sessionDate = new Date(session.session_date + 'T' + session.session_time);
-                    option.textContent = `${session.course_code} - ${sessionDate.toLocaleDateString()} ${sessionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-                    option.dataset.code = session.attendance_code;
+                    const sessionDate = new Date(session.session_date + 'T' + session.start_time);
+                    const timeRange = session.end_time ? 
+                        `${new Date(session.session_date + 'T' + session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(session.session_date + 'T' + session.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
+                        new Date(session.session_date + 'T' + session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    option.textContent = `${session.course_code} - ${sessionDate.toLocaleDateString()} ${timeRange}`;
                     select.appendChild(option);
                 });
             }
@@ -563,8 +521,21 @@ async function loadAttendanceSessions() {
 
 // View session attendance
 async function viewSessionAttendance(sessionId) {
-    document.getElementById('attendance-session-select').value = sessionId;
-    loadAttendanceForSession();
+    // Navigate to attendance marking section
+    document.getElementById('attendance-marking').scrollIntoView({ behavior: 'smooth' });
+    
+    // Set the session in the dropdown and load attendance
+    const select = document.getElementById('attendance-session-select');
+    if (select) {
+        // First, make sure the dropdown is populated
+        await loadAttendanceSessions();
+        
+        // Then set the value
+        select.value = sessionId;
+        
+        // Load attendance for this session
+        await loadAttendanceForSession();
+    }
 }
 
 // Load attendance for selected session
