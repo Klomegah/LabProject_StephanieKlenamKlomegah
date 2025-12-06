@@ -1,10 +1,6 @@
 <?php
 
-session_start();
 require_once 'db.php';
-
-// Set JSON response header
-header('Content-Type: application/json');
 
 // echo post object for debugging
 
@@ -37,16 +33,6 @@ $fname=$input['firstname'];
 $lname=$input['lastname'];
 $email=$input['email'];
 $password=password_hash($input['password'],PASSWORD_DEFAULT);
-// Accept student, faculty, or facultyintern roles
-// Note: facultyintern is stored as 'faculty' in database (same table) but we track it in session
-
-$role_input = isset($input['role']) ? $input['role'] : 'student';
-$is_faculty_intern = ($role_input === 'facultyintern');
-
-// Store as 'faculty' in database since ENUM only allows 'student', 'faculty', 'admin'
-
-$role = in_array($role_input, ['student', 'faculty', 'facultyintern']) ? 
-    ($is_faculty_intern ? 'faculty' : $role_input) : 'student';
 
 //// Variables $varriable name; or $variablename=value;
 //$fname=$_POST['firstname'];
@@ -76,96 +62,39 @@ $role = in_array($role_input, ['student', 'faculty', 'facultyintern']) ?
 
 //$c=$con->query($INS_COM);
 
-$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)"; // ?-> where the cvalues will go
+$INS_COM="INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)"; // ?-> where the cvalues will go
 
 //preparing the statement
 $stmt = $con->prepare($INS_COM);
 
 //checking if prepare was successful
 if($stmt===false){
-    $state=["success"=>false,"message"=>"Prepare Failed: " . $con->error, "database"=>$con->query("SELECT DATABASE()")->fetch_row()[0]];
+    $state=["success"=>false,"message"=>"Prepare Failed"];
     echo json_encode($state);
     exit();
 }
 
 //binding the parameters
-$stmt->bind_param("sssss", $fname, $lname, $email, $password, $role);// Parameters: type(s), values
+$stmt->bind_param("ssss", $fname, $lname, $email, $password);// Parameters: type(s), values
 
-// Execute the insert
-$excecute_success = $stmt->execute();
+//excute
+$excecute_success = $stmt->execute(); //execute
 
-// Check for errors even if execute returns true
-if (!$excecute_success || $stmt->error) {
-    $error_message = $stmt->error ? $stmt->error : "Insert Failed";
-    // Check for duplicate email error
-    if (strpos($error_message, 'Duplicate entry') !== false && strpos($error_message, 'email') !== false) {
-        $error_message = "Email already exists. Please use a different email.";
-    } elseif (strpos($error_message, 'Duplicate entry') !== false) {
-        $error_message = "This information already exists in the system.";
-    }
-    $state = ["success" => false, "message" => $error_message, "debug" => $stmt->error];
-    echo json_encode($state);
-    exit();
-}
+//preventing SQL INJECTION: using c->prepare(command)
+//getting the result -Query call $c->query($command);
+// if you use select to see if there are results use $result->num_rows to see number of rows returned
 
-// Redirect if insert is successful
+
+// Redirect if insert is successful query retruns true or false 
 if($excecute_success){
-    $user_id = $stmt->insert_id;
-    
-    // Also insert into faculty or students table based on role
-    $faculty_student_insert_success = true;
-    if ($role === 'faculty') {
-        $faculty_stmt = $con->prepare("INSERT INTO faculty (faculty_id) VALUES (?)");
-        if ($faculty_stmt) {
-            $faculty_stmt->bind_param("i", $user_id);
-            if (!$faculty_stmt->execute()) {
-                // If insert fails, try to continue anyway (might already exist)
-                error_log("Failed to insert into faculty table: " . $faculty_stmt->error);
-                // Don't fail the signup if faculty entry already exists
-                if (strpos($faculty_stmt->error, 'Duplicate') === false) {
-                    $faculty_student_insert_success = false;
-                }
-            }
-            $faculty_stmt->close();
-        }
-    } else {
-        $student_stmt = $con->prepare("INSERT INTO students (student_id) VALUES (?)");
-        if ($student_stmt) {
-            $student_stmt->bind_param("i", $user_id);
-            if (!$student_stmt->execute()) {
-                // If insert fails, try to continue anyway (might already exist)
-                error_log("Failed to insert into students table: " . $student_stmt->error);
-                // Don't fail the signup if student entry already exists
-                if (strpos($student_stmt->error, 'Duplicate') === false) {
-                    $faculty_student_insert_success = false;
-                }
-            }
-            $student_stmt->close();
-        }
-    }
-    
-    // Set session variables to log the user in automatically
-    $_SESSION['user_id'] = $user_id;
-    $_SESSION['first_name'] = $fname;
-    $_SESSION['last_name'] = $lname;
-    $_SESSION['email'] = $email;
-    $_SESSION['role'] = $role;
-    
-    // Track if user is faculty intern (stored as 'faculty' in DB but different dashboard)
-    if ($is_faculty_intern) {
-        $_SESSION['is_faculty_intern'] = true;
-        $_SESSION['faculty_id'] = $user_id;
-    } elseif ($role === 'faculty') {
-        $_SESSION['is_faculty_intern'] = false;
-        $_SESSION['faculty_id'] = $user_id;
-    } else {
-        $_SESSION['student_id'] = $user_id;
-    }
-    
-    // Return success with role for redirect (use original role_input for routing)
-    $state=["success"=>true, "role"=>$role_input, "message"=>"Signup successful", "user_id"=>$user_id];
+    //header('Location: ../view/login.html');
+    $state=["success"=>true];
     echo json_encode($state);
     exit();
+}else{
+    $state=["success"=>false, "message"=>"Insert Failed"];
+    echo json_encode($state);
+    // echo "Failed Retry";
 }
 
 // if html is rendered in php to check for a submit 

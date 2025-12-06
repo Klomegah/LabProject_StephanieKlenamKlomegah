@@ -26,20 +26,17 @@ if($con->connect_error){
 
 
 // Alternative approach using environment file for better security and flexibility
+$env = parse_ini_file('../env/connect.env');// if your connect is in the root it would be env/connect.env if not you need to use the exact location example if it is in another folder it would be ../env/connect.env
 
-$env = parse_ini_file('../env/connect.env');
-
-// Use $con (not $conn) to match all other PHP files
+// Use the values from the environment file to connect
 $con = new mysqli(
-    $env['host'],
-    $env['user'],
-    $env['password'],
-    $env['database']
+$env['host'],
+$env['user'],
+$env['password'],
+$env['database']
 );
-
 // Check connection
 if ($con->connect_error) {
-    die("Connection failed: " . $con->connect_error);
+die("Connection failed: " . $con->connect_error);
 }
 ?>
-

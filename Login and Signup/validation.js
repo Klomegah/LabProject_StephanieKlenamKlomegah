@@ -125,6 +125,9 @@ try {
         } else {
             console.log('Redirecting to student dashboard');
             window.location.href = '../Dashboards/studentdashboard.php';
+        } else {
+            console.log('Redirecting faculty intern dashboard by default');
+            window.location.href = '../Dashboards/facultyinterndashboard.php';
         }
 
     } else {
