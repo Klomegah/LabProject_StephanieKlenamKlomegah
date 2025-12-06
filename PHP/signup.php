@@ -1,33 +1,7 @@
 <?php
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-
 session_start();
-
-// Check if db.php exists and can be loaded
-if (!file_exists('db.php')) {
-    http_response_code(500);
-    echo json_encode([
-        "success" => false,
-        "message" => "Database configuration file not found"
-    ]);
-    exit();
-}
-
 require_once 'db.php';
-
-// Check if database connection is established
-if (!isset($con) || !$con) {
-    http_response_code(500);
-    echo json_encode([
-        "success" => false,
-        "message" => "Database connection failed"
-    ]);
-    exit();
-}
 
 header('Content-Type: application/json');
 
