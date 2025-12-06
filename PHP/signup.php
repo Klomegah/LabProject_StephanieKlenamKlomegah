@@ -39,9 +39,12 @@ $email=$input['email'];
 $password=password_hash($input['password'],PASSWORD_DEFAULT);
 // Accept student, faculty, or facultyintern roles
 // Note: facultyintern is stored as 'faculty' in database (same table) but we track it in session
+
 $role_input = isset($input['role']) ? $input['role'] : 'student';
 $is_faculty_intern = ($role_input === 'facultyintern');
+
 // Store as 'faculty' in database since ENUM only allows 'student', 'faculty', 'admin'
+
 $role = in_array($role_input, ['student', 'faculty', 'facultyintern']) ? 
     ($is_faculty_intern ? 'faculty' : $role_input) : 'student';
 
@@ -80,7 +83,7 @@ $stmt = $con->prepare($INS_COM);
 
 //checking if prepare was successful
 if($stmt===false){
-    $state=["success"=>false,"message"=>"Prepare Failed"];
+    $state=["success"=>false,"message"=>"Prepare Failed: " . $con->error, "database"=>$con->query("SELECT DATABASE()")->fetch_row()[0]];
     echo json_encode($state);
     exit();
 }
@@ -88,15 +91,24 @@ if($stmt===false){
 //binding the parameters
 $stmt->bind_param("sssss", $fname, $lname, $email, $password, $role);// Parameters: type(s), values
 
-//excute
-$excecute_success = $stmt->execute(); //execute
+// Execute the insert
+$excecute_success = $stmt->execute();
 
-//preventing SQL INJECTION: using c->prepare(command)
-//getting the result -Query call $c->query($command);
-// if you use select to see if there are results use $result->num_rows to see number of rows returned
+// Check for errors even if execute returns true
+if (!$excecute_success || $stmt->error) {
+    $error_message = $stmt->error ? $stmt->error : "Insert Failed";
+    // Check for duplicate email error
+    if (strpos($error_message, 'Duplicate entry') !== false && strpos($error_message, 'email') !== false) {
+        $error_message = "Email already exists. Please use a different email.";
+    } elseif (strpos($error_message, 'Duplicate entry') !== false) {
+        $error_message = "This information already exists in the system.";
+    }
+    $state = ["success" => false, "message" => $error_message, "debug" => $stmt->error];
+    echo json_encode($state);
+    exit();
+}
 
-
-// Redirect if insert is successful query retruns true or false 
+// Redirect if insert is successful
 if($excecute_success){
     $user_id = $stmt->insert_id;
     
@@ -151,19 +163,7 @@ if($excecute_success){
     }
     
     // Return success with role for redirect (use original role_input for routing)
-    $state=["success"=>true, "role"=>$role_input, "message"=>"Signup successful"];
-    echo json_encode($state);
-    exit();
-}else{
-    // Get the actual error from MySQL
-    $error_message = $stmt->error ? $stmt->error : "Insert Failed";
-    // Check for duplicate email error
-    if (strpos($error_message, 'Duplicate entry') !== false && strpos($error_message, 'email') !== false) {
-        $error_message = "Email already exists. Please use a different email.";
-    } elseif (strpos($error_message, 'Duplicate entry') !== false) {
-        $error_message = "This information already exists in the system.";
-    }
-    $state=["success"=>false, "message"=>$error_message];
+    $state=["success"=>true, "role"=>$role_input, "message"=>"Signup successful", "user_id"=>$user_id];
     echo json_encode($state);
     exit();
 }
