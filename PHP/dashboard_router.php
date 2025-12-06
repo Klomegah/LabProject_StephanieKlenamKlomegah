@@ -14,7 +14,12 @@ require_once 'faculty_check.php';
 $user_id = $_SESSION['user_id'] ?? null;
 
 if ($user_id && isFaculty($con, $user_id)) {
-    header("Location: ../Dashboards/facultydashboard.php");
+    // Check if user is a faculty intern
+    if (isset($_SESSION['is_faculty_intern']) && $_SESSION['is_faculty_intern'] === true) {
+        header("Location: ../Dashboards/facultyinterndashboard.php");
+    } else {
+        header("Location: ../Dashboards/facultydashboard.php");
+    }
 } else {
     header("Location: ../Dashboards/studentdashboard.php");
 }

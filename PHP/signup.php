@@ -37,7 +37,13 @@ $fname=$input['firstname'];
 $lname=$input['lastname'];
 $email=$input['email'];
 $password=password_hash($input['password'],PASSWORD_DEFAULT);
-$role = isset($input['role']) && in_array($input['role'], ['student', 'faculty']) ? $input['role'] : 'student';
+// Accept student, faculty, or facultyintern roles
+// Note: facultyintern is stored as 'faculty' in database (same table) but we track it in session
+$role_input = isset($input['role']) ? $input['role'] : 'student';
+$is_faculty_intern = ($role_input === 'facultyintern');
+// Store as 'faculty' in database since ENUM only allows 'student', 'faculty', 'admin'
+$role = in_array($role_input, ['student', 'faculty', 'facultyintern']) ? 
+    ($is_faculty_intern ? 'faculty' : $role_input) : 'student';
 
 //// Variables $varriable name; or $variablename=value;
 //$fname=$_POST['firstname'];
@@ -133,15 +139,19 @@ if($excecute_success){
     $_SESSION['email'] = $email;
     $_SESSION['role'] = $role;
     
-    // Set faculty_id or student_id in session
-    if ($role === 'faculty') {
+    // Track if user is faculty intern (stored as 'faculty' in DB but different dashboard)
+    if ($is_faculty_intern) {
+        $_SESSION['is_faculty_intern'] = true;
+        $_SESSION['faculty_id'] = $user_id;
+    } elseif ($role === 'faculty') {
+        $_SESSION['is_faculty_intern'] = false;
         $_SESSION['faculty_id'] = $user_id;
     } else {
         $_SESSION['student_id'] = $user_id;
     }
     
-    // Return success with role for redirect
-    $state=["success"=>true, "role"=>$role, "message"=>"Signup successful"];
+    // Return success with role for redirect (use original role_input for routing)
+    $state=["success"=>true, "role"=>$role_input, "message"=>"Signup successful"];
     echo json_encode($state);
     exit();
 }else{
