@@ -195,7 +195,43 @@ async function logout() {
     }
 }
 
-// Note: Attendance code submission removed - attendance is marked by faculty only
+// Submit attendance using Session ID
+async function submitAttendanceCode(event) {
+    event.preventDefault();
+
+    const sessionId = document.getElementById('attendance-code').value.trim();
+
+    if (!sessionId || !/^\d+$/.test(sessionId)) {
+        showMessage('Please enter a valid Session ID (numbers only)', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}submit_attendance_code.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                attendance_code: sessionId
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage(result.message || 'Attendance marked successfully!', 'success');
+            document.getElementById('attendance-code-form').reset();
+            loadAttendanceReports(); // Refresh reports
+        } else {
+            showMessage(result.message || 'Failed to mark attendance', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting attendance:', error);
+        showMessage('Error submitting attendance', 'error');
+    }
+}
 
 // Load attendance reports
 async function loadAttendanceReports() {
@@ -357,6 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', filterAndDisplayCourses);
     }
 
-    // Attendance is marked by faculty, students can only view reports
+    // Set up attendance code form
+    const attendanceForm = document.getElementById('attendance-code-form');
+    if (attendanceForm) {
+        attendanceForm.addEventListener('submit', submitAttendanceCode);
+    }
 });
 

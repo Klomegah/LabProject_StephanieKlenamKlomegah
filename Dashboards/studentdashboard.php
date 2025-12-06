@@ -64,8 +64,16 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
 
         <!-- Mark Attendance Section -->
         <section id="mark-attendance">
-            <h2>Attendance Information</h2>
-            <p style="margin-bottom: 1.5rem; color: #666;">Your attendance is marked by your instructor during class sessions. View your attendance history and reports below.</p>
+            <h2>Mark Attendance</h2>
+            <p style="margin-bottom: 1.5rem; color: #666;">Enter the Session ID provided by your instructor to mark your attendance for a class session.</p>
+            
+            <form id="attendance-code-form" style="max-width: 500px;">
+                <div class="form-group">
+                    <label for="attendance-code">Session ID *</label>
+                    <input type="text" id="attendance-code" name="attendance-code" placeholder="Enter Session ID (number)" required style="font-size: 1.2rem; text-align: center;">
+                </div>
+                <button type="submit" class="primary-btn">Submit Attendance</button>
+            </form>
         </section>
 
         <!-- Attendance Reports Section -->

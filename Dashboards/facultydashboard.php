@@ -36,7 +36,7 @@ if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
                 <li><a href="#course-management">Course Management</a></li>
                 <li><a href="#session-management">Session Management</a></li>
                 <li><a href="#attendance-marking">Mark Attendance</a></li>
-                <li><a href="#enrollment-requests">Enrollment Requests</a></li>
+                <li><a href="#enrollment-requests">Enrolled Students</a></li>
                 <li><a href="#" onclick="logout(); return false;">Logout</a></li>
             </ul>
         </nav>
@@ -92,6 +92,7 @@ if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
                         <th>Time</th>
                         <th>Topic</th>
                         <th>Location</th>
+                        <th>Session ID<br><small>(Share with students)</small></th>
                         <th>Attendance Count</th>
                         <th>Actions</th>
                     </tr>
@@ -136,9 +137,10 @@ if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
             </div>
         </section>
 
-        <!-- Enrollment Requests Section -->
+        <!-- Enrolled Students Section -->
         <section id="enrollment-requests">
-            <h2>Enrollment Requests</h2>
+            <h2>Enrolled Students</h2>
+            <p style="margin-bottom: 1rem; color: #666;">View and manage students enrolled in your courses.</p>
             <table id="requests-table">
                 <thead>
                     <tr>
@@ -152,7 +154,7 @@ if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="loading">Loading requests...</td>
+                        <td colspan="6" class="loading">Loading enrolled students...</td>
                     </tr>
                 </tbody>
             </table>

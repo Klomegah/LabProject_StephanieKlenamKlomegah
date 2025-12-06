@@ -196,7 +196,7 @@ async function loadRequests() {
     }
 }
 
-// Display requests in table
+// Display enrollment list (since there's no course_requests table, show enrolled students)
 function displayRequests(requests) {
     const tbody = document.querySelector('#requests-table tbody');
     if (!tbody) return;
@@ -204,7 +204,7 @@ function displayRequests(requests) {
     tbody.innerHTML = '';
 
     if (requests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No enrollment requests</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No enrolled students</td></tr>';
         return;
     }
 
@@ -218,21 +218,16 @@ function displayRequests(requests) {
             <td>${request.email}</td>
             <td><span class="status-badge ${statusClass}">${request.status}</span></td>
             <td>
-                ${request.status === 'pending' ? `
-                    <button class="approve-btn" onclick="manageRequest(${request.request_id}, 'approve')">Approve</button>
-                    <button class="reject-btn" onclick="manageRequest(${request.request_id}, 'reject')">Reject</button>
-                ` : `
-                    <span>${new Date(request.reviewed_at).toLocaleDateString()}</span>
-                `}
+                <button class="reject-btn" onclick="removeStudent(${request.course_id}, ${request.student_id}, '${request.first_name} ${request.last_name}')">Remove</button>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-// Manage request (approve/reject)
-async function manageRequest(requestId, action) {
-    if (!confirm(`Are you sure you want to ${action} this request?`)) {
+// Remove student from course (since there's no course_requests table)
+async function removeStudent(courseId, studentId, studentName) {
+    if (!confirm(`Are you sure you want to remove ${studentName} from this course?`)) {
         return;
     }
 
@@ -244,8 +239,9 @@ async function manageRequest(requestId, action) {
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                request_id: requestId,
-                action: action
+                course_id: courseId,
+                student_id: studentId,
+                action: 'remove'
             })
         });
 
@@ -254,13 +250,13 @@ async function manageRequest(requestId, action) {
         if (result.success) {
             showMessage(result.message, 'success');
             loadRequests();
-            loadCourses(); // Refresh courses to update pending count
+            loadCourses(); // Refresh courses to update enrolled count
         } else {
-            showMessage(result.message || 'Failed to process request', 'error');
+            showMessage(result.message || 'Failed to remove student', 'error');
         }
     } catch (error) {
-        console.error('Error managing request:', error);
-        showMessage('Error processing request', 'error');
+        console.error('Error removing student:', error);
+        showMessage('Error removing student', 'error');
     }
 }
 
@@ -390,6 +386,7 @@ function displaySessions(sessions) {
             <td>${timeRange}</td>
             <td>${session.topic || '-'}</td>
             <td>${session.location || '-'}</td>
+            <td><strong style="color: var(--accent-color);">${session.session_id}</strong><br><small>Share this ID with students</small></td>
             <td>${session.attendance_count || 0}</td>
             <td>
                 <button class="edit-btn" onclick="editSession(${session.session_id})">Edit</button>

@@ -1,85 +1,79 @@
 <?php
+/**
+ * Remove Student from Course
+ * 
+ * This endpoint allows faculty to remove a student from one of their courses.
+ * Since there's no course_requests table, this directly removes the student
+ * from the course_student_list table.
+ * 
+ * Flow:
+ * 1. Verify faculty is logged in and owns the course
+ * 2. Verify the course exists and belongs to this faculty
+ * 3. Remove student from course_student_list table
+ */
+
 session_start();
 require_once 'db.php';
 require_once 'auth_check.php';
 require_once 'faculty_check.php';
 
-// Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in and is faculty (or faculty intern)
+// ============================================================================
+// STEP 1: Verify user is logged in and is faculty/faculty intern
+// ============================================================================
 if (!isset($_SESSION['user_id']) || !isFaculty($con, $_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "Unauthorized. Faculty access required."]);
     exit();
 }
 
-// Get JSON input
+// ============================================================================
+// STEP 2: Get and validate input data
+// ============================================================================
 $input = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($input['request_id'], $input['action'])) {
-    echo json_encode(["success" => false, "message" => "Invalid input. Request ID and action are required."]);
+if ($input === null || !isset($input['course_id']) || !isset($input['student_id']) || !isset($input['action'])) {
+    echo json_encode(["success" => false, "message" => "Invalid input. Course ID, Student ID, and action are required."]);
     exit();
 }
 
-$request_id = intval($input['request_id']);
-$action = $input['action']; // 'approve' or 'reject'
 $faculty_id = $_SESSION['user_id'];
+$course_id = intval($input['course_id']);
+$student_id = intval($input['student_id']);
+$action = $input['action'];
 
-if (!in_array($action, ['approve', 'reject'])) {
-    echo json_encode(["success" => false, "message" => "Invalid action. Must be 'approve' or 'reject'."]);
+if ($action !== 'remove') {
+    echo json_encode(["success" => false, "message" => "Invalid action. Use 'remove' to remove a student."]);
     exit();
 }
 
-// Verify that the request belongs to a course owned by this faculty
-$stmt = $con->prepare("SELECT cr.course_id, cr.student_id, cr.status
-                       FROM course_requests cr
-                       INNER JOIN courses c ON cr.course_id = c.course_id
-                       WHERE cr.request_id = ? AND c.faculty_id = ?");
-$stmt->bind_param("ii", $request_id, $faculty_id);
+// ============================================================================
+// STEP 3: Verify course belongs to this faculty member
+// ============================================================================
+$stmt = $con->prepare("SELECT course_id FROM courses WHERE course_id = ? AND faculty_id = ?");
+$stmt->bind_param("ii", $course_id, $faculty_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    echo json_encode(["success" => false, "message" => "Request not found or you don't have permission to manage it."]);
+    echo json_encode(["success" => false, "message" => "Course not found or access denied."]);
+    $stmt->close();
     exit();
 }
+$stmt->close();
 
-$request = $result->fetch_assoc();
+// ============================================================================
+// STEP 4: Remove student from course_student_list table
+// ============================================================================
+// This deletes the enrollment record, effectively removing the student from the course
+$stmt = $con->prepare("DELETE FROM course_student_list WHERE course_id = ? AND student_id = ?");
+$stmt->bind_param("ii", $course_id, $student_id);
 
-if ($request['status'] !== 'pending') {
-    echo json_encode(["success" => false, "message" => "This request has already been processed."]);
-    exit();
-}
-
-$course_id = $request['course_id'];
-$student_id = $request['student_id'];
-$new_status = $action === 'approve' ? 'approved' : 'rejected';
-
-// Start transaction
-$con->begin_transaction();
-
-try {
-    // Update request status
-    $stmt = $con->prepare("UPDATE course_requests SET status = ?, reviewed_at = CURRENT_TIMESTAMP WHERE request_id = ?");
-    $stmt->bind_param("si", $new_status, $request_id);
-    $stmt->execute();
-
-    if ($action === 'approve') {
-        // Add to course_student_list if approved
-        $stmt = $con->prepare("INSERT INTO course_student_list (course_id, student_id) VALUES (?, ?)
-                               ON DUPLICATE KEY UPDATE course_id = course_id");
-        $stmt->bind_param("ii", $course_id, $student_id);
-        $stmt->execute();
-    }
-
-    $con->commit();
-    echo json_encode(["success" => true, "message" => "Request " . $action . "d successfully."]);
-} catch (Exception $e) {
-    $con->rollback();
-    echo json_encode(["success" => false, "message" => "Failed to process request."]);
+if ($stmt->execute()) {
+    echo json_encode(["success" => true, "message" => "Student removed from course successfully."]);
+} else {
+    echo json_encode(["success" => false, "message" => "Failed to remove student: " . $stmt->error]);
 }
 
 $stmt->close();
 ?>
-
-
