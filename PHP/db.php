@@ -6,18 +6,12 @@ $pass="";
 $db="attendancemanagement";
 
 $con=new mysqli($host,$user,$pass,$db);
-//needed valraiables (hostname,host_user,hostpassword,databasename)
 
 if($con->connect_error){
-    // error logic
-    // die("Connection falied");
-    $errorjson=["state"=>false];
-    echo json_encode($errorjson);
-
-    die();
-}else{
-    // success logic
-    //echo "Connected successfully";
-    
+    // Return JSON error instead of dying immediately
+    // This allows the calling script to handle the error properly
+    error_log("Database connection failed: " . $con->connect_error);
+    // Don't die here - let the calling script handle it
+    // The connection will be null/false which we can check
 }
 ?>

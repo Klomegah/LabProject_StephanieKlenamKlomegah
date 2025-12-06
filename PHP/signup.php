@@ -5,6 +5,16 @@ require_once 'db.php';
 
 header('Content-Type: application/json');
 
+// Check if database connection was successful
+if (!isset($con) || $con->connect_error) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "Database connection failed. Please check your database settings."
+    ]);
+    exit();
+}
+
 try {
     $input = json_decode(file_get_contents("php://input"), true);
     if ($input === null) {

@@ -83,6 +83,23 @@ try {
         body: JSON.stringify(payload)
     });
 
+    // Check if response is OK, if not try to get error message
+    if (!response.ok) {
+        let errorText = '';
+        try {
+            const errorResult = await response.json();
+            errorText = errorResult.message || `Server error (${response.status})`;
+        } catch (e) {
+            errorText = `Server error (${response.status}). Please check your connection.`;
+        }
+        Swal.fire({
+            title: "Connection Error",
+            text: errorText,
+            icon: "error"
+        });
+        return;
+    }
+
     let result;
     try {
         result = await response.json();
@@ -140,11 +157,20 @@ try {
     
 } catch (error) {
     console.error('Error:', error);
-    Swal.fire({
-        title: "Error",
-        text: "Server error occurred. Please try again.",
-        icon: "error"
-    });
+    // Check if it's a network error
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+        Swal.fire({
+            title: "Connection Failed",
+            text: "Cannot connect to server. Please check your internet connection and try again.",
+            icon: "error"
+        });
+    } else {
+        Swal.fire({
+            title: "Error",
+            text: "An unexpected error occurred. Please try again.",
+            icon: "error"
+        });
+    }
 }
 
 });
