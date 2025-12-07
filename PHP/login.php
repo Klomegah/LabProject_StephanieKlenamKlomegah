@@ -17,10 +17,22 @@ if (!isset($con) || $con->connect_error) {
 }
 
 //Get JSON input
-$input =json_decode(file_get_contents("php://input"),true); /// if using JSON
+$input = json_decode(file_get_contents("php://input"), true);
 
+// Check if JSON decode was successful
+if ($input === null) {
+    http_response_code(400);
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid JSON input. Please check your request."
+    ]);
+    exit();
+}
+
+// Check if required fields are present
 if(!isset($input['email'], $input['password'])){
-    $state=["success"=>false,"message"=>"Invalid Input"]; // I keep getting "Invalid Input" 
+    http_response_code(400);
+    $state=["success"=>false,"message"=>"Invalid Input. Email and password are required."];
     echo json_encode($state);
     exit();
 }
