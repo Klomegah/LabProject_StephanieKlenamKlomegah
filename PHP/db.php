@@ -1,8 +1,8 @@
-
 <?php
+// Create connection
 $env = parse_ini_file('../env/connect.env');
 
-$con= new mysqli(
+$conn= new mysqli(
     $env['host'],
     $env['user'],
     $env['password'],
@@ -11,8 +11,8 @@ $con= new mysqli(
 
    
    // Check connection
-   if ($con->connect_error) {
+   if ($conn->connect_error) {
     // Throw exception 
-    throw new Exception("Connection failed: " . $con->connect_error);
+    throw new Exception("Connection failed: " . $conn->connect_error);
 }
  
