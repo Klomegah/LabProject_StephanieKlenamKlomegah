@@ -143,6 +143,7 @@ try {
         "line" => $e->getLine()
     ]);
     exit();
+    
 } catch (Error $e) {
     error_log("Signup fatal error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
     http_response_code(500);
