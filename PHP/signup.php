@@ -1,16 +1,30 @@
 <?php
 
+// Enable error reporting for debugging (remove in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 session_start();
 require_once 'db.php';
 
 header('Content-Type: application/json');
 
 // Check if database connection was successful
-if (!isset($con) || $con->connect_error) {
+if (!isset($con)) {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "message" => "Database connection failed. Please check your database settings."
+        "message" => "Database connection variable not set."
+    ]);
+    exit();
+}
+
+if ($con->connect_error) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "Database connection failed: " . $con->connect_error
     ]);
     exit();
 }
@@ -128,8 +142,10 @@ try {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "message" => "An error occurred during signup. Please try again.",
-        "error" => $e->getMessage()
+        "message" => "An error occurred during signup: " . $e->getMessage(),
+        "error" => $e->getMessage(),
+        "file" => $e->getFile(),
+        "line" => $e->getLine()
     ]);
     exit();
 } catch (Error $e) {
@@ -137,8 +153,10 @@ try {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "message" => "A fatal error occurred. Please contact support.",
-        "error" => $e->getMessage()
+        "message" => "A fatal error occurred: " . $e->getMessage(),
+        "error" => $e->getMessage(),
+        "file" => $e->getFile(),
+        "line" => $e->getLine()
     ]);
     exit();
 }
